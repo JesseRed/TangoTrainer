@@ -1,0 +1,42 @@
+{% extends "base.html" %}
+{% block title %}Übungsstunden — TangoTrainer{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <h1 class="page-title">Übungsstunden</h1>
+  <a href="/lessons/new" class="btn btn-primary">＋ Neue Stunde</a>
+</div>
+
+{% if lessons %}
+<div style="display:flex; flex-direction:column; gap:1rem;">
+  {% for lesson in lessons %}
+  <div class="clip-card" style="align-items:center;">
+    <div class="clip-body">
+      <div class="clip-title">{{ lesson.title }}</div>
+      <div class="clip-meta">
+        {{ lesson.items | length }} Block{{ "s" if lesson.items | length != 1 else "" }}
+        {% if lesson.planned_duration %} · {{ lesson.planned_duration }} Min.{% endif %}
+        {% if lesson.goal %} · {{ lesson.goal | truncate(60) }}{% endif %}
+      </div>
+      {% if lesson.description %}
+      <div class="clip-notes">{{ lesson.description | truncate(120) }}</div>
+      {% endif %}
+    </div>
+    <div style="display:flex; flex-direction:column; gap:0.4rem; flex-shrink:0;">
+      <a href="/player/lesson/{{ lesson.id }}" class="btn btn-primary btn-sm">▶ Starten</a>
+      <a href="/lessons/{{ lesson.id }}/edit" class="btn btn-secondary btn-sm">Bearbeiten</a>
+      <form method="post" action="/lessons/{{ lesson.id }}/delete"
+            onsubmit="return confirm('Stunde „{{ lesson.title }}" wirklich löschen?')">
+        <button type="submit" class="btn btn-danger btn-sm" style="width:100%;">Löschen</button>
+      </form>
+    </div>
+  </div>
+  {% endfor %}
+</div>
+{% else %}
+<div style="text-align:center; padding:4rem; color:var(--text-muted);">
+  <p style="font-size:1.1rem; margin-bottom:1rem;">Noch keine Übungsstunden angelegt.</p>
+  <a href="/lessons/new" class="btn btn-primary">Erste Stunde erstellen</a>
+</div>
+{% endif %}
+{% endblock %}

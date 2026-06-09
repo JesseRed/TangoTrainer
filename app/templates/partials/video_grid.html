@@ -1,0 +1,30 @@
+{% if scan_result is defined %}
+<div class="notice notice-success">
+  Scan abgeschlossen: {{ scan_result.added }} neue Videos hinzugefügt, {{ scan_result.skipped }} bereits bekannt.
+</div>
+{% endif %}
+
+<div class="video-grid">
+  {% for video in videos %}
+  <a href="/videos/{{ video.id }}" class="video-card" style="display:block; text-decoration:none; color:inherit;">
+    {% if video.thumbnail_path %}
+      <img class="video-thumb" src="/{{ video.thumbnail_path }}" alt="{{ video.title }}" loading="lazy">
+    {% else %}
+      <div class="video-thumb-placeholder">▶</div>
+    {% endif %}
+    <div class="video-info">
+      <div class="video-title">{{ video.title }}</div>
+      <div class="video-meta">
+        {% if video.duration %}{{ (video.duration / 60) | int }}:{{ "%02d" | format(video.duration | int % 60) }} min{% endif %}
+        {% if video.dancer_1 %} · {{ video.dancer_1 }}{% endif %}
+        {% if video.year %} · {{ video.year }}{% endif %}
+      </div>
+      <div class="video-meta">{{ video.clips | length }} Clip{{ "s" if video.clips | length != 1 else "" }}</div>
+    </div>
+  </a>
+  {% else %}
+  <p style="color: var(--text-muted); grid-column: 1/-1;">
+    Keine Videos gefunden. Lege MP4-Dateien in <code>data/videos/</code> und klicke "Jetzt scannen".
+  </p>
+  {% endfor %}
+</div>

@@ -1,0 +1,71 @@
+{% for item in lesson.items | sort(attribute='order_index') %}
+<div class="lesson-item" id="lesson-item-{{ item.id }}">
+  <div class="lesson-item-drag">
+    <form method="post" action="/lessons/{{ lesson.id }}/items/{{ item.id }}/up" style="display:inline;">
+      <button type="submit" class="btn btn-secondary btn-sm" title="Nach oben" {% if loop.first %}disabled{% endif %}>↑</button>
+    </form>
+    <form method="post" action="/lessons/{{ lesson.id }}/items/{{ item.id }}/down" style="display:inline;">
+      <button type="submit" class="btn btn-secondary btn-sm" title="Nach unten" {% if loop.last %}disabled{% endif %}>↓</button>
+    </form>
+    <span class="lesson-item-index">{{ loop.index }}</span>
+  </div>
+
+  <div class="lesson-item-body">
+    {% if item.item_type == "clip" and item.clip %}
+    <div class="lesson-item-title">{{ item.clip.title }}</div>
+    <div class="lesson-item-meta">
+      {{ item.clip.video.title }} ·
+      {{ item.clip.start_seconds | round(1) }}s – {{ item.clip.end_seconds | round(1) }}s
+      ({{ ((item.clip.end_seconds - item.clip.start_seconds)) | round(1) }}s)
+      {% if item.clip.difficulty %} · {{ item.clip.difficulty }}{% endif %}
+    </div>
+    {% elif item.item_type == "text" %}
+    <div class="lesson-item-title" style="color:var(--accent);">📝 Textanweisung</div>
+    <div class="lesson-item-meta">{{ item.text_instruction | truncate(100) }}</div>
+    {% endif %}
+  </div>
+
+  <div class="lesson-item-settings">
+    <form method="post" action="/lessons/{{ lesson.id }}/items/{{ item.id }}/update"
+          style="display:flex; gap:0.5rem; align-items:center; flex-wrap:wrap;">
+      {% if item.item_type == "clip" %}
+      <label class="setting-label">
+        ↺
+        <input type="number" name="loop_count" value="{{ item.loop_count }}"
+               min="1" max="20" style="width:48px;" title="Wiederholungen">
+      </label>
+      <label class="setting-label">
+        %
+        <input type="number" name="speed" value="{{ (item.speed * 100) | int }}"
+               min="25" max="200" step="5" style="width:54px;" title="Geschwindigkeit %">
+      </label>
+      <label class="setting-label">
+        ⏸
+        <input type="number" name="pause_after_seconds" value="{{ item.pause_after_seconds }}"
+               min="0" max="120" style="width:48px;" title="Pause danach (s)">s
+      </label>
+      <label class="setting-label" style="gap:0.3rem;">
+        <input type="checkbox" name="show_notes" {% if item.show_notes %}checked{% endif %}>
+        Notiz
+      </label>
+      {% else %}
+      <input type="hidden" name="loop_count" value="1">
+      <input type="hidden" name="speed" value="100">
+      <input type="hidden" name="pause_after_seconds" value="0">
+      {% endif %}
+      <button type="submit" class="btn btn-secondary btn-sm">✓</button>
+    </form>
+  </div>
+
+  <div class="lesson-item-actions">
+    <form method="post" action="/lessons/{{ lesson.id }}/items/{{ item.id }}/delete"
+          onsubmit="return confirm('Block entfernen?')">
+      <button type="submit" class="btn btn-danger btn-sm">✕</button>
+    </form>
+  </div>
+</div>
+{% else %}
+<p style="color:var(--text-muted); text-align:center; padding:1.5rem;">
+  Noch keine Blöcke. Wähle Clips auf der <a href="/clips">Clips-Seite</a> aus.
+</p>
+{% endfor %}

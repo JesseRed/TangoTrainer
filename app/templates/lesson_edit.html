@@ -1,0 +1,90 @@
+{% extends "base.html" %}
+{% block title %}{{ lesson.title }} bearbeiten — TangoTrainer{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <h1 class="page-title">{{ lesson.title }}</h1>
+  <div style="display:flex; gap:0.5rem;">
+    <a href="/player/lesson/{{ lesson.id }}" class="btn btn-primary">▶ Starten</a>
+    <a href="/lessons" class="btn btn-secondary btn-sm">← Stunden</a>
+  </div>
+</div>
+
+<div style="display:grid; grid-template-columns:1fr 340px; gap:2rem; align-items:start;">
+
+  <!-- Left: Item-Liste -->
+  <div>
+    <h2 style="font-size:0.95rem; color:var(--accent); margin-bottom:1rem; text-transform:uppercase; letter-spacing:.06em;">
+      Ablauf ({{ lesson.items | length }} Blöcke)
+    </h2>
+
+    <div id="lesson-items-list">
+      {% include "partials/lesson_items.html" %}
+    </div>
+
+    <!-- Text-Item hinzufügen -->
+    <details style="margin-top:1.5rem;">
+      <summary class="btn btn-secondary" style="cursor:pointer; display:inline-flex;">
+        ＋ Textanweisung hinzufügen
+      </summary>
+      <div style="margin-top:0.75rem; padding:1rem; background:var(--bg-card);
+                  border:1px solid var(--border); border-radius:var(--radius);">
+        <form method="post" action="/lessons/{{ lesson.id }}/items/text">
+          <div class="form-group">
+            <label>Titel der Anweisung</label>
+            <input type="text" name="title" required placeholder="z. B. Jetzt selbst üben">
+          </div>
+          <div class="form-group">
+            <label>Text (optional)</label>
+            <textarea name="text_instruction" rows="3"
+                      placeholder="Detaillierte Beschreibung…"></textarea>
+          </div>
+          <button type="submit" class="btn btn-primary btn-sm">Hinzufügen</button>
+        </form>
+      </div>
+    </details>
+
+    <div style="margin-top:1rem;">
+      <a href="/clips" class="btn btn-secondary">
+        ＋ Clips aus der Bibliothek hinzufügen
+      </a>
+    </div>
+  </div>
+
+  <!-- Right: Metadaten -->
+  <div>
+    <div class="clip-panel">
+      <h3>Stunden-Einstellungen</h3>
+      <form method="post" action="/lessons/{{ lesson.id }}/meta">
+        <div class="form-group">
+          <label>Titel</label>
+          <input type="text" name="title" value="{{ lesson.title }}" required>
+        </div>
+        <div class="form-group">
+          <label>Ziel</label>
+          <input type="text" name="goal" value="{{ lesson.goal or '' }}"
+                 placeholder="z. B. Giro verbessern">
+        </div>
+        <div class="form-group">
+          <label>Geplante Dauer (Min.)</label>
+          <input type="number" name="planned_duration"
+                 value="{{ lesson.planned_duration or '' }}" min="5" max="180">
+        </div>
+        <div class="form-group">
+          <label>Beschreibung</label>
+          <textarea name="description">{{ lesson.description or '' }}</textarea>
+        </div>
+        <button type="submit" class="btn btn-primary btn-sm">Speichern</button>
+      </form>
+    </div>
+
+    <div style="margin-top:1rem;">
+      <form method="post" action="/lessons/{{ lesson.id }}/delete"
+            onsubmit="return confirm('Stunde wirklich löschen?')">
+        <button type="submit" class="btn btn-danger btn-sm">Stunde löschen</button>
+      </form>
+    </div>
+  </div>
+
+</div>
+{% endblock %}

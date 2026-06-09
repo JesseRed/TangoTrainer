@@ -1,0 +1,116 @@
+{% extends "base.html" %}
+{% block title %}{% if lesson %}{{ lesson.title }}{% else %}Player{% endif %} — TangoTrainer{% endblock %}
+
+{% block content %}
+{% if items %}
+<div class="player-layout" id="player-root" style="padding-top:1rem;">
+  <!-- Main Player -->
+  <div class="player-main">
+    <video id="player-video" preload="auto"
+           style="width:100%;border-radius:6px;background:#000;"></video>
+
+    <!-- Text-Item display (hidden for clip items) -->
+    <div id="player-text-item" style="display:none; min-height:200px; background:#111;
+         border-radius:6px; padding:2.5rem; text-align:center;">
+      <div id="player-text-content" style="font-size:1.4rem; color:var(--accent);"></div>
+      <div id="player-text-body" style="margin-top:1rem; font-size:1rem; color:#ccc;"></div>
+    </div>
+
+    <div class="player-info">
+      <div style="display:flex; justify-content:space-between; align-items:flex-start;">
+        <div>
+          <div class="player-title" id="player-title">{{ items[0].title }}</div>
+          <div class="player-counter" id="player-counter">
+            Block 1 von {{ items | length }}
+          </div>
+          <div id="player-loop-counter" style="font-size:0.8rem; color:var(--accent); margin-top:0.15rem; min-height:1.1em;"></div>
+        </div>
+        {% if lesson %}
+        <a href="/lessons/{{ lesson.id }}/edit" class="btn btn-secondary btn-sm" style="flex-shrink:0;">
+          ← Stunde
+        </a>
+        {% endif %}
+      </div>
+
+      <div class="tag-chips" id="player-tags" style="margin-top:0.5rem;">
+        {% for tag in items[0].tags %}
+        <span class="tag-chip" style="border-color:{{ tag.color }};color:{{ tag.color }};">{{ tag.name }}</span>
+        {% endfor %}
+      </div>
+
+      <!-- Notizen (ausklappbar) -->
+      {% if items[0].notes or items[0].technical_notes or items[0].adaptation_notes %}
+      <details id="player-notes-details" style="margin-top:0.75rem;">
+        <summary style="cursor:pointer; font-size:0.85rem; color:var(--text-muted);">Notizen anzeigen</summary>
+        <div id="player-notes" style="margin-top:0.5rem; font-size:0.875rem; color:#ccc; line-height:1.6;">
+          {% if items[0].notes %}<p>{{ items[0].notes }}</p>{% endif %}
+          {% if items[0].technical_notes %}<p style="margin-top:0.4rem; color:#aaa;"><em>Technik:</em> {{ items[0].technical_notes }}</p>{% endif %}
+          {% if items[0].adaptation_notes %}<p style="margin-top:0.4rem; color:#aaa;"><em>Für uns:</em> {{ items[0].adaptation_notes }}</p>{% endif %}
+        </div>
+      </details>
+      {% else %}
+      <div id="player-notes" style="display:none;"></div>
+      <details id="player-notes-details" style="display:none;"><summary></summary></details>
+      {% endif %}
+    </div>
+
+    <div class="player-controls" style="margin-top:1rem; flex-wrap:wrap;">
+      <button class="btn btn-secondary" onclick="prevItem()">⏮</button>
+      <button class="btn btn-secondary" onclick="replayItem()">↺ Nochmal</button>
+      <button class="btn btn-primary btn-lg" id="btn-play-pause" onclick="togglePlay()">⏸ Pause</button>
+      <button class="btn btn-secondary" onclick="nextItem()">⏭</button>
+      <select id="speed-select" onchange="setSpeed(this.value)" class="btn btn-secondary" title="Geschwindigkeit">
+        <option value="0.5">50%</option>
+        <option value="0.75">75%</option>
+        <option value="0.9">90%</option>
+        <option value="1" selected>100%</option>
+      </select>
+      <button class="btn btn-secondary" onclick="toggleFullscreen()" title="Vollbild (F)">⛶</button>
+    </div>
+
+    <!-- Pause-Overlay -->
+    <div id="pause-overlay" style="display:none; margin-top:0.75rem; padding:0.75rem 1rem;
+         background:rgba(200,169,110,0.12); border:1px solid var(--accent); border-radius:var(--radius);
+         text-align:center; font-size:1rem; color:var(--accent);">
+      Pause… <span id="pause-countdown"></span>
+    </div>
+  </div>
+
+  <!-- Sidebar -->
+  <div class="player-sidebar">
+    <div class="sidebar-header">
+      {% if lesson %}{{ lesson.title }}{% else %}Playlist{% endif %}
+      ({{ items | length }})
+    </div>
+    {% for item in items %}
+    <div class="playlist-item {% if loop.index0 == 0 %}active{% endif %}"
+         id="playlist-item-{{ loop.index0 }}"
+         onclick="goToItem({{ loop.index0 }})">
+      {% if item.item_type == "text" %}📝 {% endif %}{{ item.title }}
+      <div class="item-meta">
+        {% if item.item_type == "clip" %}
+          {{ item.start | round(1) }}s – {{ item.end | round(1) }}s
+          {% if item.loop_count > 1 %} · {{ item.loop_count }}×{% endif %}
+          {% if item.difficulty %} · {{ item.difficulty }}{% endif %}
+        {% else %}
+          Textanweisung
+        {% endif %}
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+</div>
+
+<!-- Items data for JS -->
+<script>
+const ITEMS = {{ items | tojson }};
+</script>
+<script src="/static/js/player.js"></script>
+
+{% else %}
+<div style="text-align:center; padding:4rem; color:var(--text-muted);">
+  <p style="font-size:1.2rem; margin-bottom:1rem;">Keine Blöcke in der Playlist.</p>
+  <a href="/clips" class="btn btn-primary">Clips auswählen</a>
+</div>
+{% endif %}
+{% endblock %}

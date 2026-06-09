@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+{% block title %}Bibliothek — TangoTrainer{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <h1 class="page-title">Videobibliothek</h1>
+  <button
+    class="btn btn-primary"
+    hx-post="/scan"
+    hx-target="#video-grid-container"
+    hx-swap="innerHTML"
+    hx-indicator="#scan-spinner">
+    Jetzt scannen
+    <span id="scan-spinner" class="htmx-indicator" style="margin-left:0.4rem;">…</span>
+  </button>
+</div>
+
+<div id="video-grid-container">
+  {% include "partials/video_grid.html" %}
+</div>
+{% endblock %}

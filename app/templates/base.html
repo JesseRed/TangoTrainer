@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{% block title %}TangoTrainer{% endblock %}</title>
+  <link rel="stylesheet" href="/static/css/style.css">
+  <script src="https://unpkg.com/htmx.org@2.0.3" integrity="sha384-0895/pl2MU10Hqc6jd4RvrthNlDiE9U1tWmX7WRESftEDRosgxNsQG/Ze9YMRzHq" crossorigin="anonymous"></script>
+</head>
+<body>
+  <nav>
+    <span class="nav-brand">TangoTrainer</span>
+    <div class="nav-links">
+      <a href="/" {% if request.url.path == "/" %}class="active"{% endif %}>Bibliothek</a>
+      <a href="/clips" {% if request.url.path.startswith("/clips") %}class="active"{% endif %}>Clips</a>
+      <a href="/lessons" {% if request.url.path.startswith("/lessons") %}class="active"{% endif %}>Stunden</a>
+      <a href="/player" {% if request.url.path.startswith("/player") %}class="active"{% endif %}>Player</a>
+      <a href="/tags" {% if request.url.path == "/tags" %}class="active"{% endif %}>Tags</a>
+      <a href="/settings" {% if request.url.path == "/settings" %}class="active"{% endif %}>Einstellungen</a>
+    </div>
+  </nav>
+
+  <div class="container">
+    {% block content %}{% endblock %}
+  </div>
+
+  {% block scripts %}{% endblock %}
+</body>
+</html>

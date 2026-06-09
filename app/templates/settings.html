@@ -1,0 +1,85 @@
+{% extends "base.html" %}
+{% block title %}Einstellungen — TangoTrainer{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <h1 class="page-title">Einstellungen</h1>
+</div>
+
+<!-- Video-Ordner -->
+<section style="max-width:700px;">
+  <h2 style="font-size:1rem; color:var(--accent); margin-bottom:1rem;">Video-Scan-Ordner</h2>
+
+  <!-- Default dir (read-only) -->
+  <div style="margin-bottom:1rem;">
+    <div class="tag-category-label">Standard-Ordner (immer aktiv)</div>
+    <div style="padding:0.6rem 1rem; background:var(--bg-input); border:1px solid var(--border);
+                border-radius:var(--radius); font-size:0.875rem; color:var(--text-muted); font-family:monospace;">
+      {{ default_dir }}
+    </div>
+  </div>
+
+  <!-- Configured extra dirs -->
+  {% if watch_dirs %}
+  <div style="margin-bottom:1.5rem;">
+    <div class="tag-category-label">Zusätzliche Ordner</div>
+    <div style="display:flex; flex-direction:column; gap:0.5rem;">
+      {% for wd in watch_dirs %}
+      <div style="display:flex; align-items:center; gap:0.75rem; padding:0.6rem 1rem;
+                  background:var(--bg-card); border:1px solid var(--border); border-radius:var(--radius);">
+        <div style="flex:1; min-width:0;">
+          {% if wd.label %}
+          <div style="font-weight:600; font-size:0.9rem;">{{ wd.label }}</div>
+          {% endif %}
+          <div style="font-family:monospace; font-size:0.8rem; color:var(--text-muted);
+                      overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">{{ wd.path }}</div>
+        </div>
+        <form method="post" action="/settings/watch-dirs/{{ wd.id }}/toggle" style="display:inline;">
+          <button type="submit" class="btn btn-secondary btn-sm"
+                  title="{{ 'Deaktivieren' if wd.active else 'Aktivieren' }}">
+            {{ '✓ Aktiv' if wd.active else '✗ Inaktiv' }}
+          </button>
+        </form>
+        <form method="post" action="/settings/watch-dirs/{{ wd.id }}/delete"
+              onsubmit="return confirm('Ordner entfernen?')" style="display:inline;">
+          <button type="submit" class="btn btn-danger btn-sm">Entfernen</button>
+        </form>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+  {% endif %}
+
+  <!-- Add form -->
+  {% if error %}
+  <div class="notice" style="background:rgba(220,38,38,0.15); border-color:var(--danger); color:#f87171; margin-bottom:1rem;">
+    {{ error }}
+  </div>
+  {% endif %}
+
+  <div style="background:var(--bg-card); border:1px solid var(--border); border-radius:var(--radius); padding:1.25rem;">
+    <div class="tag-category-label" style="margin-bottom:0.75rem;">Ordner hinzufügen</div>
+    <form method="post" action="/settings/watch-dirs"
+          style="display:flex; flex-direction:column; gap:0.75rem;">
+      <div class="form-group" style="margin:0;">
+        <label>Pfad (absolut)</label>
+        <input type="text" name="path" required
+               value="{{ form_path or '' }}"
+               placeholder="/mnt/nas/TangoVideos oder C:\Videos\Tango">
+      </div>
+      <div class="form-group" style="margin:0;">
+        <label>Bezeichnung (optional)</label>
+        <input type="text" name="label"
+               value="{{ form_label or '' }}"
+               placeholder="z. B. NAS-Archiv">
+      </div>
+      <button type="submit" class="btn btn-primary">Ordner hinzufügen</button>
+    </form>
+  </div>
+
+  <p style="margin-top:1rem; font-size:0.82rem; color:var(--text-muted);">
+    Netzlaufwerke (NAS) zuerst per OS als Mount einbinden (SMB/NFS), dann den lokalen Mount-Pfad hier eintragen.
+    Nach dem Hinzufügen in der <a href="/">Bibliothek</a> auf „Jetzt scannen" klicken.
+  </p>
+</section>
+{% endblock %}

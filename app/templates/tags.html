@@ -1,0 +1,41 @@
+{% extends "base.html" %}
+{% block title %}Tags — TangoTrainer{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <h1 class="page-title">Tag-Verwaltung</h1>
+</div>
+
+{% for category, tags in categories.items() %}
+<div class="tag-category" style="margin-bottom:1.5rem;">
+  <div class="tag-category-label">{{ category }}</div>
+  <div class="tag-chips">
+    {% for tag in tags %}
+    <span class="tag-chip" style="border-color:{{ tag.color }}; color:{{ tag.color }};">
+      {{ tag.name }}
+    </span>
+    {% endfor %}
+  </div>
+</div>
+{% endfor %}
+
+<div style="margin-top:2rem; max-width:420px;">
+  <h3 style="font-size:1rem; margin-bottom:1rem; color:var(--accent);">Neuen Tag anlegen</h3>
+  <form method="post" action="/tags" style="display:flex; gap:0.75rem; align-items:flex-end; flex-wrap:wrap;">
+    <div class="form-group" style="flex:1; min-width:140px; margin:0;">
+      <label>Name</label>
+      <input type="text" name="name" required placeholder="Tag-Name">
+    </div>
+    <div class="form-group" style="flex:1; min-width:160px; margin:0;">
+      <label>Kategorie</label>
+      <select name="category" required>
+        {% for cat in categories.keys() %}
+        <option>{{ cat }}</option>
+        {% endfor %}
+        <option>Sonstiges</option>
+      </select>
+    </div>
+    <button type="submit" class="btn btn-primary" style="align-self:flex-end;">Hinzufügen</button>
+  </form>
+</div>
+{% endblock %}

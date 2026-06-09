@@ -1,0 +1,174 @@
+{% extends "base.html" %}
+{% block title %}{{ video.title }} — TangoTrainer{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <h1 class="page-title">{{ video.title }}</h1>
+  <a href="/" class="btn btn-secondary btn-sm">← Bibliothek</a>
+</div>
+
+<div class="editor-layout">
+  <!-- Left: Video + Time Bar -->
+  <div>
+    <div class="video-wrapper">
+      <video id="clip-video" controls preload="metadata"
+             src="/videos/{{ video.id }}/stream">
+      </video>
+    </div>
+    <div class="time-bar">
+      <span class="time-current" id="current-time">0:00.0</span>
+      <span style="color:var(--text-muted); font-size:0.8rem;">
+        Dauer: {% if video.duration %}{{ (video.duration / 60) | int }}:{{ "%02d" | format(video.duration | int % 60) }}{% else %}?{% endif %}
+      </span>
+      <span style="margin-left:auto; font-size:0.8rem; color:var(--text-muted);">
+        <span class="kbd">S</span> = Start &nbsp; <span class="kbd">E</span> = Ende
+      </span>
+      <button type="button" class="btn btn-secondary btn-sm"
+              onclick="captureVideoThumbnail({{ video.id }})"
+              title="Aktuelles Bild als Thumbnail setzen">
+        📷 Thumbnail setzen
+      </button>
+      <span id="thumb-status" style="font-size:0.8rem; color:var(--accent); display:none;">✓ gespeichert</span>
+    </div>
+
+    <!-- Existing clips for this video -->
+    {% if video.clips %}
+    <div style="margin-top:1.5rem;">
+      <h3 style="font-size:0.95rem; color:var(--text-muted); margin-bottom:0.75rem;">
+        Clips dieses Videos ({{ video.clips | length }})
+      </h3>
+      <div class="clip-list">
+        {% for clip in video.clips %}
+        <div class="clip-card">
+          <div class="clip-body">
+            <div class="clip-title">{{ clip.title }}</div>
+            <div class="clip-meta">
+              {{ clip.start_seconds | round(1) }}s – {{ clip.end_seconds | round(1) }}s
+              ({{ ((clip.end_seconds - clip.start_seconds)) | round(1) }}s)
+              {% if clip.difficulty %} · {{ clip.difficulty }}{% endif %}
+            </div>
+            {% if clip.notes %}<div class="clip-notes">{{ clip.notes }}</div>{% endif %}
+            <div class="tag-chips" style="margin-top:0.5rem;">
+              {% for tag in clip.tags %}
+              <span class="tag-chip" style="border-color:{{ tag.color }}; color:{{ tag.color }};">{{ tag.name }}</span>
+              {% endfor %}
+            </div>
+          </div>
+          <div style="display:flex; flex-direction:column; gap:0.4rem; flex-shrink:0;">
+            <a href="/clips/{{ clip.id }}" class="btn btn-secondary btn-sm">Details</a>
+            <button
+              class="btn btn-secondary btn-sm"
+              onclick="jumpTo({{ clip.start_seconds }})">▶ Ansehen</button>
+          </div>
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+    {% endif %}
+  </div>
+
+  <!-- Right: New Clip Form -->
+  <div class="clip-panel">
+    <h3>Neuen Clip anlegen</h3>
+    <form method="post" action="/clips">
+      <input type="hidden" name="video_id" value="{{ video.id }}">
+
+      <!-- Start / End markers -->
+      <div style="margin-bottom:1rem;">
+        <label>Zeitmarken</label>
+        <div class="marker-row">
+          <button type="button" id="btn-set-start" class="btn btn-secondary btn-sm">
+            Start setzen <span class="kbd">S</span>
+          </button>
+          <span class="marker-time" id="start-display">–</span>
+          <input type="hidden" id="start_seconds" name="start_seconds" value="0" required>
+        </div>
+        <div class="marker-row">
+          <button type="button" id="btn-set-end" class="btn btn-secondary btn-sm">
+            Ende setzen <span class="kbd">E</span>
+          </button>
+          <span class="marker-time" id="end-display">–</span>
+          <input type="hidden" id="end_seconds" name="end_seconds" value="0" required>
+        </div>
+        <button type="button" id="preview-clip" class="btn btn-secondary btn-sm" style="margin-top:0.5rem;">
+          ▶ Vorschau
+        </button>
+      </div>
+
+      <div class="form-group">
+        <label for="title">Titel *</label>
+        <input type="text" id="title" name="title" required placeholder="z. B. weicher Giro mit Sacada">
+      </div>
+
+      <div class="form-group">
+        <label for="difficulty">Schwierigkeit</label>
+        <select id="difficulty" name="difficulty">
+          <option value="">— wählen —</option>
+          <option>leicht</option>
+          <option>mittel</option>
+          <option>schwer</option>
+          <option>sehr schwer</option>
+        </select>
+      </div>
+
+      <div class="form-group">
+        <label for="notes">Notiz</label>
+        <textarea id="notes" name="notes" placeholder="Was sieht man? Was ist der Trick?"></textarea>
+      </div>
+
+      <div class="form-group">
+        <label for="technical_notes">Technische Notiz</label>
+        <textarea id="technical_notes" name="technical_notes" placeholder="Technische Idee"></textarea>
+      </div>
+
+      <div class="form-group">
+        <label for="leader_notes">Führender</label>
+        <textarea id="leader_notes" name="leader_notes" rows="2"></textarea>
+      </div>
+
+      <div class="form-group">
+        <label for="follower_notes">Folgende</label>
+        <textarea id="follower_notes" name="follower_notes" rows="2"></textarea>
+      </div>
+
+      <div class="form-group">
+        <label for="adaptation_notes">Anpassung für uns</label>
+        <textarea id="adaptation_notes" name="adaptation_notes" rows="2"></textarea>
+      </div>
+
+      <button type="submit" class="btn btn-primary" style="width:100%;">
+        Clip speichern → Tags vergeben
+      </button>
+    </form>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+  function jumpTo(seconds) {
+    const v = document.getElementById("clip-video");
+    if (v) { v.currentTime = seconds; v.play(); }
+  }
+
+  function captureVideoThumbnail(videoId) {
+    const v = document.getElementById("clip-video");
+    v.pause();
+    const canvas = document.createElement("canvas");
+    canvas.width = v.videoWidth;
+    canvas.height = v.videoHeight;
+    canvas.getContext("2d").drawImage(v, 0, 0);
+    canvas.toBlob(async (blob) => {
+      const fd = new FormData();
+      fd.append("image", blob, "thumb.jpg");
+      const res = await fetch(`/videos/${videoId}/thumbnail`, { method: "POST", body: fd });
+      if (res.ok) {
+        const s = document.getElementById("thumb-status");
+        s.style.display = "";
+        setTimeout(() => { s.style.display = "none"; }, 2000);
+      }
+    }, "image/jpeg", 0.88);
+  }
+</script>
+<script src="/static/js/clip_editor.js"></script>
+{% endblock %}

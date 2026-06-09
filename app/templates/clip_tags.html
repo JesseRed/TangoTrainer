@@ -1,0 +1,51 @@
+{% extends "base.html" %}
+{% block title %}Tags — {{ clip.title }} — TangoTrainer{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <h1 class="page-title">Tags für: {{ clip.title }}</h1>
+  <a href="/clips/{{ clip.id }}" class="btn btn-secondary btn-sm">Überspringen</a>
+</div>
+
+<p style="color:var(--text-muted); margin-bottom:1.5rem;">
+  Wähle alle passenden Tags aus. Mehrfachauswahl möglich.
+</p>
+
+<form method="post" action="/clips/{{ clip.id }}/tags">
+  {% for category, tags in categories.items() %}
+  <div class="tag-category">
+    <div class="tag-category-label">{{ category }}</div>
+    <div class="tag-checkbox-group">
+      {% for tag in tags %}
+      <label class="tag-checkbox-label {% if tag.id in current_tag_ids %}checked{% endif %}"
+             style="{% if tag.id in current_tag_ids %}border-color:{{ tag.color }};{% endif %}"
+             id="label-{{ tag.id }}">
+        <input type="checkbox" name="tag_ids" value="{{ tag.id }}"
+               {% if tag.id in current_tag_ids %}checked{% endif %}
+               onchange="toggleLabel(this)">
+        {{ tag.name }}
+      </label>
+      {% endfor %}
+    </div>
+  </div>
+  {% endfor %}
+
+  <div style="margin-top:2rem; display:flex; gap:1rem;">
+    <button type="submit" class="btn btn-primary btn-lg">Tags speichern</button>
+    <a href="/clips/{{ clip.id }}" class="btn btn-secondary btn-lg">Abbrechen</a>
+  </div>
+</form>
+{% endblock %}
+
+{% block scripts %}
+<script>
+  function toggleLabel(checkbox) {
+    const label = document.getElementById("label-" + checkbox.value);
+    if (checkbox.checked) {
+      label.classList.add("checked");
+    } else {
+      label.classList.remove("checked");
+    }
+  }
+</script>
+{% endblock %}

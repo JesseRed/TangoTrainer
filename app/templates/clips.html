@@ -1,0 +1,126 @@
+{% extends "base.html" %}
+{% block title %}Clips — TangoTrainer{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <h1 class="page-title">Clips</h1>
+  {% if clips %}
+  <a href="/player?clip_ids={{ clips | map(attribute='id') | join(',') }}"
+     class="btn btn-primary">▶ Alle abspielen</a>
+  {% endif %}
+</div>
+
+<!-- Floating Aktionsleiste (erscheint wenn Clips selektiert) -->
+<div id="clip-action-bar" style="display:none; position:fixed; bottom:1.5rem; left:50%;
+     transform:translateX(-50%); z-index:100; background:#1a1a1a; border:1px solid var(--accent);
+     border-radius:8px; padding:0.75rem 1.25rem; display:none; align-items:center; gap:1rem;
+     box-shadow:0 4px 24px rgba(0,0,0,0.7);">
+  <span id="clip-action-count" style="color:var(--accent); font-weight:600; white-space:nowrap;"></span>
+  <form id="clip-action-form" method="post" action="/lessons/new-and-add"
+        style="display:flex; gap:0.75rem; align-items:center;">
+    <input type="hidden" name="clip_ids" id="clip-action-ids">
+    <select name="lesson_id" id="clip-lesson-select"
+            style="background:var(--bg-input); border:1px solid var(--border);
+                   color:var(--text); padding:0.4rem 0.6rem; border-radius:var(--radius); font-size:0.875rem;">
+      <option value="new">＋ Neue Stunde</option>
+      {% for lesson in lessons %}
+      <option value="{{ lesson.id }}">{{ lesson.title }}</option>
+      {% endfor %}
+    </select>
+    <button type="submit" class="btn btn-primary btn-sm">Zu Stunde hinzufügen</button>
+    <button type="button" class="btn btn-secondary btn-sm" onclick="clearSelection()">Abbrechen</button>
+  </form>
+</div>
+
+<!-- Filter Bar -->
+<form method="get" action="/clips" class="filter-bar">
+  <div>
+    <label>Suche</label>
+    <input type="text" name="q" value="{{ q }}" placeholder="Titel, Notiz…">
+  </div>
+  <div>
+    <label>Schwierigkeit</label>
+    <select name="difficulty">
+      <option value="">Alle</option>
+      {% for d in ["leicht","mittel","schwer","sehr schwer"] %}
+      <option {% if selected_difficulty == d %}selected{% endif %}>{{ d }}</option>
+      {% endfor %}
+    </select>
+  </div>
+  <div>
+    <label>Tag</label>
+    <select name="tag">
+      <option value="">Alle</option>
+      {% for tag in all_tags %}
+      <option value="{{ tag.id }}" {% if selected_tag == tag.id %}selected{% endif %}>
+        {{ tag.category }}: {{ tag.name }}
+      </option>
+      {% endfor %}
+    </select>
+  </div>
+  <button type="submit" class="btn btn-primary">Filtern</button>
+  <a href="/clips" class="btn btn-secondary">Zurücksetzen</a>
+</form>
+
+<!-- Results -->
+{% if clips %}
+<p style="color:var(--text-muted); font-size:0.85rem; margin-bottom:1rem;">
+  {{ clips | length }} Clip{{ "s" if clips | length != 1 else "" }}
+</p>
+<div class="clip-list">
+  {% for clip in clips %}
+  <div class="clip-card" id="clip-card-{{ clip.id }}">
+    <label style="display:flex; align-items:center; padding:0 0.25rem; cursor:pointer; flex-shrink:0;">
+      <input type="checkbox" class="clip-checkbox" value="{{ clip.id }}"
+             onchange="updateSelection()" style="width:18px; height:18px; cursor:pointer;">
+    </label>
+    {% if clip.thumbnail_path %}
+    <img class="clip-thumb" src="/{{ clip.thumbnail_path }}" alt="{{ clip.title }}" loading="lazy">
+    {% elif clip.video.thumbnail_path %}
+    <img class="clip-thumb" src="/{{ clip.video.thumbnail_path }}" alt="{{ clip.title }}" loading="lazy">
+    {% else %}
+    <div class="clip-thumb" style="display:flex;align-items:center;justify-content:center;color:var(--text-muted);">▶</div>
+    {% endif %}
+    <div class="clip-body">
+      <div class="clip-title">
+        <a href="/clips/{{ clip.id }}">{{ clip.title }}</a>
+      </div>
+      <div class="clip-meta">
+        {{ clip.video.title }} ·
+        {{ clip.start_seconds | round(1) }}s – {{ clip.end_seconds | round(1) }}s
+        ({{ ((clip.end_seconds - clip.start_seconds)) | round(1) }}s)
+        {% if clip.difficulty %} · {{ clip.difficulty }}{% endif %}
+      </div>
+      {% if clip.notes %}
+      <div class="clip-notes">{{ clip.notes | truncate(120) }}</div>
+      {% endif %}
+      <div class="tag-chips">
+        {% for tag in clip.tags %}
+        <span class="tag-chip" style="border-color:{{ tag.color }};color:{{ tag.color }};">{{ tag.name }}</span>
+        {% endfor %}
+      </div>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:0.4rem;flex-shrink:0;">
+      <a href="/clips/{{ clip.id }}" class="btn btn-secondary btn-sm">Details</a>
+      <a href="/player?clip_ids={{ clip.id }}" class="btn btn-secondary btn-sm">▶ Abspielen</a>
+      <form method="post" action="/clips/{{ clip.id }}/delete"
+            onsubmit="return confirm('Clip „{{ clip.title }}“ wirklich löschen?')">
+        <button type="submit" class="btn btn-danger btn-sm" style="width:100%;">Löschen</button>
+      </form>
+    </div>
+  </div>
+  {% endfor %}
+</div>
+{% else %}
+<p style="color:var(--text-muted);">
+  Keine Clips gefunden.
+  {% if not q and not selected_difficulty and not selected_tag %}
+    Öffne ein Video und lege deinen ersten Clip an.
+  {% endif %}
+</p>
+{% endif %}
+{% endblock %}
+
+{% block scripts %}
+<script src="/static/js/clip_select.js"></script>
+{% endblock %}
