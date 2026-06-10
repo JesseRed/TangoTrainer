@@ -1,0 +1,103 @@
+{% extends "base.html" %}
+{% block title %}{{ tanda.title }} — TangoTrainer{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <h1 class="page-title">{{ tanda.title }}</h1>
+  <a href="/tandas" class="btn btn-secondary btn-sm">← Tandas</a>
+</div>
+
+<div style="display:grid; grid-template-columns:1fr 320px; gap:2rem; align-items:start;">
+
+  <!-- Left: Track-Liste -->
+  <div>
+    <h2 style="font-size:0.95rem; color:var(--accent); margin-bottom:1rem; text-transform:uppercase; letter-spacing:.06em;">
+      Stücke ({{ tanda.tracks | length }})
+    </h2>
+
+    {% if tanda.tracks %}
+    <div class="clip-list">
+      {% for tt in tanda.tracks %}
+      <div class="clip-card" style="align-items:center;">
+        <div style="color:var(--text-muted); font-size:0.8rem; min-width:1.5rem; text-align:center; flex-shrink:0;">
+          {{ loop.index }}
+        </div>
+        <div class="clip-body">
+          <div class="clip-title">{{ tt.track.title }}</div>
+          <div class="clip-meta">
+            {% if tt.track.orchestra %}{{ tt.track.orchestra }}{% endif %}
+            {% if tt.track.singer %} · {{ tt.track.singer }}{% endif %}
+            {% if tt.track.duration %} · {{ (tt.track.duration / 60) | int }}:{{ "%02d" | format(tt.track.duration | int % 60) }}{% endif %}
+          </div>
+        </div>
+        <div style="display:flex; gap:0.25rem; flex-shrink:0;">
+          <form method="post" action="/tandas/{{ tanda.id }}/tracks/{{ tt.id }}/up">
+            <button type="submit" class="btn btn-secondary btn-sm" title="Nach oben">↑</button>
+          </form>
+          <form method="post" action="/tandas/{{ tanda.id }}/tracks/{{ tt.id }}/down">
+            <button type="submit" class="btn btn-secondary btn-sm" title="Nach unten">↓</button>
+          </form>
+          <form method="post" action="/tandas/{{ tanda.id }}/tracks/{{ tt.id }}/remove"
+                onsubmit="return confirm('Stück aus Tanda entfernen?')">
+            <button type="submit" class="btn btn-danger btn-sm" title="Entfernen">✕</button>
+          </form>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+    {% else %}
+    <p style="color:var(--text-muted); font-size:0.9rem;">Noch keine Stücke hinzugefügt.</p>
+    {% endif %}
+
+    {% if tracks %}
+    <div style="margin-top:1.5rem; padding:1rem; background:var(--bg-card);
+                border:1px solid var(--border); border-radius:var(--radius);">
+      <p style="font-size:0.85rem; color:var(--text-muted); margin-bottom:0.75rem;">
+        Stück hinzufügen ({{ tanda.dance_type | title }}-Stücke aus der Bibliothek):
+      </p>
+      <form method="post" action="/tandas/{{ tanda.id }}/tracks"
+            style="display:flex; gap:0.5rem; flex-wrap:wrap; align-items:center;">
+        <select name="track_id" style="flex:1; min-width:200px; background:var(--bg-input);
+                border:1px solid var(--border); color:var(--text); padding:0.4rem 0.6rem;
+                border-radius:var(--radius); font-size:0.85rem;">
+          {% for track in tracks %}
+          <option value="{{ track.id }}">
+            {{ track.title }}{% if track.orchestra %} — {{ track.orchestra }}{% endif %}
+            {% if track.duration %} ({{ (track.duration / 60) | int }}:{{ "%02d" | format(track.duration | int % 60) }}){% endif %}
+          </option>
+          {% endfor %}
+        </select>
+        <button type="submit" class="btn btn-primary btn-sm">＋ Hinzufügen</button>
+      </form>
+    </div>
+    {% else %}
+    <p style="color:var(--text-muted); font-size:0.85rem; margin-top:1rem;">
+      Keine {{ tanda.dance_type | title }}-Stücke in der Bibliothek.
+      <a href="/music">Musik scannen →</a>
+    </p>
+    {% endif %}
+  </div>
+
+  <!-- Right: Metadaten + Löschen -->
+  <div>
+    <div class="clip-panel">
+      <h3>Tanda-Einstellungen</h3>
+      <p style="font-size:0.85rem; color:var(--text-muted); margin-bottom:1rem;">
+        Tanztyp: <strong>{{ tanda.dance_type | title }}</strong>
+        (kann nach dem Anlegen nicht geändert werden)
+      </p>
+      {% if tanda.notes %}
+      <p style="font-size:0.85rem; color:var(--text-muted);">{{ tanda.notes }}</p>
+      {% endif %}
+    </div>
+
+    <div style="margin-top:1rem;">
+      <form method="post" action="/tandas/{{ tanda.id }}/delete"
+            onsubmit="return confirm('Tanda „{{ tanda.title }}" wirklich löschen?')">
+        <button type="submit" class="btn btn-danger btn-sm">Tanda löschen</button>
+      </form>
+    </div>
+  </div>
+
+</div>
+{% endblock %}

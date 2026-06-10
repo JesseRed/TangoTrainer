@@ -25,8 +25,12 @@ def init_db():
     from sqlalchemy import text
     Base.metadata.create_all(bind=engine)
     with engine.connect() as conn:
-        try:
-            conn.execute(text("ALTER TABLE clips ADD COLUMN thumbnail_path VARCHAR"))
-            conn.commit()
-        except Exception:
-            pass
+        for stmt in [
+            "ALTER TABLE clips ADD COLUMN thumbnail_path VARCHAR",
+            "ALTER TABLE lesson_items ADD COLUMN audio_id INTEGER REFERENCES music_tracks(id)",
+        ]:
+            try:
+                conn.execute(text(stmt))
+                conn.commit()
+            except Exception:
+                pass

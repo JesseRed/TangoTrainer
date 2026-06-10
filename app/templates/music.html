@@ -1,0 +1,75 @@
+{% extends "base.html" %}
+{% block title %}Musik — TangoTrainer{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <h1 class="page-title">Musikbibliothek</h1>
+  <form method="post" action="/scan-music">
+    <button type="submit" class="btn btn-primary">🔍 Jetzt scannen</button>
+  </form>
+</div>
+
+{% if scan_result %}
+<div class="notice notice-success">
+  {{ scan_result.added }} neue Stück{{ "e" if scan_result.added != 1 else "" }} gefunden,
+  {{ scan_result.skipped }} bereits vorhanden.
+</div>
+{% endif %}
+
+{% if tracks %}
+<p style="color:var(--text-muted); font-size:0.85rem; margin-bottom:1rem;">
+  {{ tracks | length }} Stück{{ "e" if tracks | length != 1 else "" }}
+</p>
+
+{% set ns = namespace(current_dance="") %}
+<div class="clip-list">
+  {% for track in tracks %}
+    {% if track.dance_type != ns.current_dance %}
+      {% set ns.current_dance = track.dance_type %}
+      <div style="font-size:0.8rem; font-weight:700; text-transform:uppercase; letter-spacing:.08em;
+                  color:var(--text-muted); margin:1rem 0 0.4rem; padding-top:0.5rem;
+                  border-top:1px solid var(--border);">
+        {{ track.dance_type or "Ohne Kategorie" | title }}
+      </div>
+    {% endif %}
+    <div class="clip-card">
+      <div class="clip-body">
+        <div class="clip-title">{{ track.title }}</div>
+        <div class="clip-meta">
+          {% if track.orchestra %}{{ track.orchestra }}{% endif %}
+          {% if track.singer %} · {{ track.singer }}{% endif %}
+          {% if track.year %} · {{ track.year }}{% endif %}
+          {% if track.duration %} · {{ (track.duration / 60) | int }}:{{ "%02d" | format(track.duration | int % 60) }}{% endif %}
+        </div>
+      </div>
+      <div style="flex-shrink:0; display:flex; align-items:center; gap:0.75rem; flex-wrap:wrap;">
+        <audio controls src="/music/{{ track.id }}/stream"
+               style="height:32px; accent-color:var(--accent); max-width:200px;"></audio>
+        {% if lessons %}
+        <form method="post" action="/music/{{ track.id }}/add-to-lesson"
+              style="display:flex; gap:0.4rem; align-items:center;">
+          <select name="lesson_id"
+                  style="background:var(--bg-input); border:1px solid var(--border);
+                         color:var(--text); padding:0.3rem 0.5rem; border-radius:var(--radius);
+                         font-size:0.8rem; max-width:160px;">
+            {% for lesson in lessons %}
+            <option value="{{ lesson.id }}">{{ lesson.title }}</option>
+            {% endfor %}
+          </select>
+          <button type="submit" class="btn btn-secondary btn-sm" title="Zur Stunde hinzufügen">＋</button>
+        </form>
+        {% endif %}
+      </div>
+    </div>
+  {% endfor %}
+</div>
+{% else %}
+<div style="text-align:center; padding:4rem; color:var(--text-muted);">
+  <p style="margin-bottom:0.75rem;">Noch keine Musikstücke vorhanden.</p>
+  <p style="font-size:0.85rem;">
+    Lege MP3/FLAC/WAV-Dateien in <code>data/music/tango/</code>, <code>data/music/milonga/</code>
+    oder <code>data/music/vals/</code> ab und klicke „Scannen".
+  </p>
+</div>
+{% endif %}
+{% endblock %}

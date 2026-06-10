@@ -16,6 +16,10 @@
       <a href="/lessons" {% if request.url.path.startswith("/lessons") %}class="active"{% endif %}>Stunden</a>
       <a href="/player" {% if request.url.path.startswith("/player") %}class="active"{% endif %}>Player</a>
       <a href="/tags" {% if request.url.path == "/tags" %}class="active"{% endif %}>Tags</a>
+      <a href="/music" {% if request.url.path.startswith("/music") %}class="active"{% endif %}>Musik</a>
+      <a href="/tandas" {% if request.url.path.startswith("/tandas") %}class="active"{% endif %}>Tandas</a>
+      <a href="/playlists" {% if request.url.path.startswith("/playlists") %}class="active"{% endif %}>Playlists</a>
+      <a href="/suggestions" {% if request.url.path == "/suggestions" %}class="active"{% endif %}>Vorschläge</a>
       <a href="/settings" {% if request.url.path == "/settings" %}class="active"{% endif %}>Einstellungen</a>
     </div>
   </nav>

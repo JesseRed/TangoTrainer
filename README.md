@@ -115,6 +115,56 @@ Alle gescannten Videos als Thumbnail-Raster. „Jetzt scannen" findet neue Datei
 - Loop-Counter zeigt „Wiederholung 2 von 3"
 - Notizen klappen auf wenn „Notiz anzeigen" aktiv
 - Geschwindigkeit über Dropdown (50 / 75 / 90 / 100 %)
+- Nach dem letzten Loop erscheint ein Bewertungs-Overlay (Klappt gut / Noch unsicher / Nicht verstanden / Überspringen)
+
+### Handy-Fernbedienung (`/remote/{lesson-id}`)
+
+Der Player lässt sich vom Handy aus steuern, ohne die Tastatur am Tanzraum-PC zu brauchen.
+
+**Einrichten:**
+
+1. Stunde im Tanzraum-Browser öffnen: `http://<server-ip>:8000/player/lesson/{id}`
+2. Unter dem Player erscheint der Link zur Fernbedienung, z. B.:
+   ```
+   Fernbedienung: /remote/3
+   ```
+3. Auf dem Handy im selben WLAN öffnen: `http://<server-ip>:8000/remote/3`
+
+Handy und Player verbinden sich automatisch per WebSocket. Sobald „Verbunden ●" erscheint, ist die Steuerung aktiv.
+
+**Verfügbare Funktionen auf dem Handy:**
+
+| Bereich | Funktion |
+|---|---|
+| Steuerung | ⏮ Zurück, ⏸/▶ Play/Pause, ⏭ Weiter, ↺ Nochmal, ⛶ Vollbild |
+| Geschwindigkeit | 50 % / 75 % / 90 % / 100 % |
+| Bewertung | Klappt gut / Noch unsicher / Nicht verstanden / Überspringen |
+
+Die Bewertung vom Handy aus wirkt auf das Bewertungs-Overlay im Player — du kannst also nach dem Üben direkt vom Handy bewerten, ohne zur Tastatur zu gehen.
+
+**Hinweis:** Läuft nur im lokalen Heimnetzwerk. Handy und Server müssen im selben WLAN sein.
+
+### Wiederholungsvorschläge (`/suggestions`)
+
+Nach dem Bewerten von Clips schlägt TangoTrainer automatisch Wiederholungen vor:
+
+- **Noch unsicher** → Clip erscheint nach 3 Tagen in den Vorschlägen
+- **Nicht verstanden** → nach 1 Tag
+- **Klappt gut** → nach 7 Tagen
+
+Clips direkt von der Vorschlagsseite zu einer Übungsstunde hinzufügen oder einzeln üben.
+
+### Musikbibliothek (`/musik`)
+
+1. Musikdateien (MP3, FLAC, WAV, M4A, OGG) in Unterordner ablegen:
+   ```
+   data/music/tango/
+   data/music/milonga/
+   data/music/vals/
+   ```
+2. Unter **Musik** → **„Jetzt scannen"** klicken
+3. Im Lesson-Editor: **„♫ Musikstück hinzufügen"** — Stück aus Dropdown wählen
+4. Im Player spielt das Musikstück als eigener Block ab (z. B. zum freien Üben danach)
 
 ---
 

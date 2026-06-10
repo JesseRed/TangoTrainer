@@ -1,0 +1,204 @@
+{% extends "base.html" %}
+{% block title %}{{ playlist.title }} — TangoTrainer{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <h1 class="page-title">{{ playlist.title }}</h1>
+  <div style="display:flex; gap:0.5rem;">
+    <a href="/player/playlist/{{ playlist.id }}" class="btn btn-primary">▶ Abspielen</a>
+    <a href="/playlists" class="btn btn-secondary btn-sm">← Playlists</a>
+  </div>
+</div>
+
+<div style="display:grid; grid-template-columns:1fr 300px; gap:2rem; align-items:start;">
+
+  <!-- Left: Content -->
+  <div>
+
+  {% if playlist.playlist_type == "fixed" %}
+    <!-- Fixed playlist: ordered track list -->
+    <h2 style="font-size:0.95rem; color:var(--accent); margin-bottom:1rem; text-transform:uppercase; letter-spacing:.06em;">
+      Stücke ({{ playlist.playlist_tracks | length }})
+    </h2>
+
+    {% if playlist.playlist_tracks %}
+    <div class="clip-list">
+      {% for pt in playlist.playlist_tracks %}
+      <div class="clip-card" style="align-items:center;">
+        <div style="color:var(--text-muted); font-size:0.8rem; min-width:1.5rem; text-align:center; flex-shrink:0;">
+          {{ loop.index }}
+        </div>
+        <div class="clip-body">
+          <div class="clip-title">{{ pt.track.title }}</div>
+          <div class="clip-meta">
+            {% if pt.track.orchestra %}{{ pt.track.orchestra }}{% endif %}
+            {% if pt.track.dance_type %} · {{ pt.track.dance_type | title }}{% endif %}
+            {% if pt.track.duration %} · {{ (pt.track.duration / 60) | int }}:{{ "%02d" | format(pt.track.duration | int % 60) }}{% endif %}
+          </div>
+        </div>
+        <div style="display:flex; gap:0.25rem; flex-shrink:0;">
+          <form method="post" action="/playlists/{{ playlist.id }}/tracks/{{ pt.id }}/up">
+            <button type="submit" class="btn btn-secondary btn-sm">↑</button>
+          </form>
+          <form method="post" action="/playlists/{{ playlist.id }}/tracks/{{ pt.id }}/down">
+            <button type="submit" class="btn btn-secondary btn-sm">↓</button>
+          </form>
+          <form method="post" action="/playlists/{{ playlist.id }}/tracks/{{ pt.id }}/remove"
+                onsubmit="return confirm('Stück entfernen?')">
+            <button type="submit" class="btn btn-danger btn-sm">✕</button>
+          </form>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+    {% else %}
+    <p style="color:var(--text-muted); font-size:0.9rem;">Noch keine Stücke hinzugefügt.</p>
+    {% endif %}
+
+    {% if tracks %}
+    <div style="margin-top:1.5rem; padding:1rem; background:var(--bg-card);
+                border:1px solid var(--border); border-radius:var(--radius);">
+      <p style="font-size:0.85rem; color:var(--text-muted); margin-bottom:0.75rem;">Stück hinzufügen:</p>
+      <form method="post" action="/playlists/{{ playlist.id }}/tracks"
+            style="display:flex; gap:0.5rem; flex-wrap:wrap; align-items:center;">
+        <select name="track_id" style="flex:1; min-width:200px; background:var(--bg-input);
+                border:1px solid var(--border); color:var(--text); padding:0.4rem 0.6rem;
+                border-radius:var(--radius); font-size:0.85rem;">
+          {% set ns = namespace(dance="") %}
+          {% for track in tracks %}
+            {% if track.dance_type != ns.dance %}
+              {% set ns.dance = track.dance_type %}
+              <optgroup label="{{ track.dance_type or 'Ohne Kategorie' | title }}">
+            {% endif %}
+            <option value="{{ track.id }}">
+              {{ track.title }}{% if track.orchestra %} — {{ track.orchestra }}{% endif %}
+              {% if track.duration %} ({{ (track.duration / 60) | int }}:{{ "%02d" | format(track.duration | int % 60) }}){% endif %}
+            </option>
+          {% endfor %}
+        </select>
+        <button type="submit" class="btn btn-primary btn-sm">＋ Hinzufügen</button>
+      </form>
+    </div>
+    {% endif %}
+
+  {% else %}
+    <!-- Tanda playlist: pattern editor -->
+    <h2 style="font-size:0.95rem; color:var(--accent); margin-bottom:0.5rem; text-transform:uppercase; letter-spacing:.06em;">
+      Muster (wird {{ playlist.repeat_count }}× wiederholt)
+    </h2>
+    <p style="font-size:0.85rem; color:var(--text-muted); margin-bottom:1rem;">
+      Pro Durchlauf: für jeden Slot wird zufällig eine Tanda des Tanztyps gewählt.
+      Zwischen den Tandas spielt automatisch eine zufällige Cortina.
+    </p>
+
+    {% if playlist.pattern %}
+    <div class="clip-list">
+      {% for slot in playlist.pattern %}
+      <div class="clip-card" style="align-items:center;">
+        <div style="color:var(--text-muted); font-size:0.8rem; min-width:1.5rem; text-align:center; flex-shrink:0;">
+          {{ loop.index }}
+        </div>
+        <div class="clip-body">
+          <div class="clip-title">{{ slot.count }}× {{ slot.dance_type | title }}</div>
+          <div class="clip-meta">
+            {{ slot.count }} zufällige Tanda{{ "s" if slot.count != 1 else "" }}
+          </div>
+        </div>
+        <div style="display:flex; gap:0.25rem; flex-shrink:0;">
+          <form method="post" action="/playlists/{{ playlist.id }}/pattern/{{ slot.id }}/up">
+            <button type="submit" class="btn btn-secondary btn-sm">↑</button>
+          </form>
+          <form method="post" action="/playlists/{{ playlist.id }}/pattern/{{ slot.id }}/down">
+            <button type="submit" class="btn btn-secondary btn-sm">↓</button>
+          </form>
+          <form method="post" action="/playlists/{{ playlist.id }}/pattern/{{ slot.id }}/remove"
+                onsubmit="return confirm('Slot entfernen?')">
+            <button type="submit" class="btn btn-danger btn-sm">✕</button>
+          </form>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+
+    <!-- Pattern preview -->
+    <div style="margin-top:1rem; padding:0.75rem 1rem; background:var(--bg-input);
+                border:1px solid var(--border); border-radius:var(--radius); font-size:0.82rem; color:var(--text-muted);">
+      <strong style="color:var(--text);">Ablauf pro Durchlauf:</strong>
+      {% set total = namespace(n=0) %}
+      {% for slot in playlist.pattern %}
+        {% for i in range(slot.count) %}
+          {% set total.n = total.n + 1 %}
+          {% if not loop.first or not loop.parent.first %}[Cortina]{% endif %}
+          [{{ slot.dance_type | title }}-Tanda]
+        {% endfor %}
+      {% endfor %}
+      {% if playlist.pattern %}
+      → {{ total.n * playlist.repeat_count }} Tandas gesamt
+      {% endif %}
+    </div>
+    {% else %}
+    <p style="color:var(--text-muted); font-size:0.9rem;">Noch keine Slots definiert.</p>
+    {% endif %}
+
+    <div style="margin-top:1.5rem; padding:1rem; background:var(--bg-card);
+                border:1px solid var(--border); border-radius:var(--radius);">
+      <p style="font-size:0.85rem; color:var(--text-muted); margin-bottom:0.75rem;">Slot hinzufügen:</p>
+      <form method="post" action="/playlists/{{ playlist.id }}/pattern"
+            style="display:flex; gap:0.5rem; flex-wrap:wrap; align-items:center;">
+        <select name="dance_type" style="background:var(--bg-input); border:1px solid var(--border);
+                color:var(--text); padding:0.4rem 0.6rem; border-radius:var(--radius); font-size:0.85rem;">
+          <option value="tango">Tango</option>
+          <option value="milonga">Milonga</option>
+          <option value="vals">Vals</option>
+        </select>
+        <input type="number" name="count" value="1" min="1" max="10"
+               style="width:60px; background:var(--bg-input); border:1px solid var(--border);
+                      color:var(--text); padding:0.4rem 0.6rem; border-radius:var(--radius); font-size:0.85rem;"
+               title="Anzahl Tandas dieses Typs">
+        <button type="submit" class="btn btn-primary btn-sm">＋ Slot hinzufügen</button>
+      </form>
+    </div>
+  {% endif %}
+
+  </div>
+
+  <!-- Right: Meta -->
+  <div>
+    <div class="clip-panel">
+      <h3>Einstellungen</h3>
+      <form method="post" action="/playlists/{{ playlist.id }}/meta">
+        <div class="form-group">
+          <label>Titel</label>
+          <input type="text" name="title" value="{{ playlist.title }}" required>
+        </div>
+        {% if playlist.playlist_type == "tanda" %}
+        <div class="form-group">
+          <label>Wiederholungen</label>
+          <input type="number" name="repeat_count" value="{{ playlist.repeat_count }}" min="1" max="20">
+        </div>
+        {% else %}
+        <input type="hidden" name="repeat_count" value="{{ playlist.repeat_count }}">
+        {% endif %}
+        <div class="form-group">
+          <label>Notizen</label>
+          <textarea name="notes" rows="2">{{ playlist.notes or '' }}</textarea>
+        </div>
+        <button type="submit" class="btn btn-primary btn-sm">Speichern</button>
+      </form>
+    </div>
+
+    <div style="margin-top:0.75rem; padding:0.6rem 0.8rem; background:var(--bg-input);
+                border:1px solid var(--border); border-radius:var(--radius); font-size:0.82rem; color:var(--text-muted);">
+      Typ: <strong style="color:var(--text);">{% if playlist.playlist_type == 'tanda' %}Tanda-Playlist{% else %}Feste Liste{% endif %}</strong>
+    </div>
+
+    <div style="margin-top:1rem;">
+      <form method="post" action="/playlists/{{ playlist.id }}/delete"
+            onsubmit="return confirm('Playlist wirklich löschen?')">
+        <button type="submit" class="btn btn-danger btn-sm">Playlist löschen</button>
+      </form>
+    </div>
+  </div>
+
+</div>
+{% endblock %}

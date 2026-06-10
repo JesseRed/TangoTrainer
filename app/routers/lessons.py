@@ -4,7 +4,7 @@ from fastapi.templating import Jinja2Templates
 from sqlalchemy.orm import Session
 from typing import Optional
 from app.database import get_db
-from app.models import Lesson, LessonItem, Clip
+from app.models import Lesson, LessonItem, Clip, MusicTrack
 from config import BASE_DIR
 
 router = APIRouter()
@@ -47,6 +47,7 @@ def lesson_create(
 
     if clip_ids:
         ids = [int(i) for i in clip_ids.split(",") if i.strip().isdigit()]
+        next_index = 0
         for clip_id in ids:
             clip = db.query(Clip).filter(Clip.id == clip_id).first()
             if clip:
@@ -54,12 +55,12 @@ def lesson_create(
                     lesson_id=lesson.id,
                     item_type="clip",
                     clip_id=clip_id,
-                    order_index=_next_order(lesson),
+                    order_index=next_index,
                     loop_count=clip.default_loop_count,
                     speed=clip.default_speed,
                     pause_after_seconds=clip.pause_after_seconds,
                 ))
-                db.flush()
+                next_index += 1
         db.commit()
 
     return RedirectResponse(url=f"/lessons/{lesson.id}/edit", status_code=303)
@@ -70,8 +71,9 @@ def lesson_edit(lesson_id: int, request: Request, db: Session = Depends(get_db))
     lesson = db.query(Lesson).filter(Lesson.id == lesson_id).first()
     if not lesson:
         raise HTTPException(status_code=404, detail="Übungsstunde nicht gefunden")
+    music_tracks = db.query(MusicTrack).order_by(MusicTrack.dance_type, MusicTrack.title).all()
     return templates.TemplateResponse(
-        "lesson_edit.html", {"request": request, "lesson": lesson}
+        "lesson_edit.html", {"request": request, "lesson": lesson, "music_tracks": music_tracks}
     )
 
 
@@ -121,6 +123,7 @@ async def items_bulk_add(lesson_id: int, request: Request, db: Session = Depends
         raise HTTPException(status_code=404)
     form = await request.form()
     clip_ids = [int(v) for k, v in form.multi_items() if k == "clip_ids"]
+    next_index = _next_order(lesson)
     for clip_id in clip_ids:
         clip = db.query(Clip).filter(Clip.id == clip_id).first()
         if clip:
@@ -128,12 +131,12 @@ async def items_bulk_add(lesson_id: int, request: Request, db: Session = Depends
                 lesson_id=lesson_id,
                 item_type="clip",
                 clip_id=clip_id,
-                order_index=_next_order(lesson),
+                order_index=next_index,
                 loop_count=clip.default_loop_count,
                 speed=clip.default_speed,
                 pause_after_seconds=clip.pause_after_seconds,
             ))
-            db.flush()
+            next_index += 1
     db.commit()
     return RedirectResponse(url=f"/lessons/{lesson_id}/edit", status_code=303)
 
@@ -153,6 +156,31 @@ def item_add_text(
         item_type="text",
         text_instruction=f"{title}\n\n{text_instruction}".strip() if text_instruction else title,
         order_index=_next_order(lesson),
+    ))
+    db.commit()
+    return RedirectResponse(url=f"/lessons/{lesson_id}/edit", status_code=303)
+
+
+@router.post("/lessons/{lesson_id}/items/music", response_class=HTMLResponse)
+def item_add_music(
+    lesson_id: int,
+    track_id: int = Form(...),
+    db: Session = Depends(get_db),
+):
+    lesson = db.query(Lesson).filter(Lesson.id == lesson_id).first()
+    if not lesson:
+        raise HTTPException(status_code=404)
+    track = db.query(MusicTrack).filter(MusicTrack.id == track_id).first()
+    if not track:
+        raise HTTPException(status_code=404, detail="Musikstück nicht gefunden")
+    db.add(LessonItem(
+        lesson_id=lesson_id,
+        item_type="audio",
+        audio_id=track_id,
+        order_index=_next_order(lesson),
+        loop_count=1,
+        speed=1.0,
+        pause_after_seconds=0,
     ))
     db.commit()
     return RedirectResponse(url=f"/lessons/{lesson_id}/edit", status_code=303)
@@ -211,12 +239,19 @@ def item_move_down(lesson_id: int, item_id: int, db: Session = Depends(get_db)):
 
 
 def _swap_item(lesson_id: int, item_id: int, direction: int, db: Session):
-    lesson = db.query(Lesson).filter(Lesson.id == lesson_id).first()
-    if not lesson:
-        return
-    items = sorted(lesson.items, key=lambda x: x.order_index)
+    # Direct query with stable sort (id as tiebreaker for equal order_index values)
+    items = (
+        db.query(LessonItem)
+        .filter(LessonItem.lesson_id == lesson_id)
+        .order_by(LessonItem.order_index, LessonItem.id)
+        .all()
+    )
+    # Normalize order_indexes to 0,1,2,... first (fixes any duplicate/gap state)
+    for idx, it in enumerate(items):
+        it.order_index = idx
     ids = [i.id for i in items]
     if item_id not in ids:
+        db.rollback()
         return
     pos = ids.index(item_id)
     target = pos + direction
@@ -224,4 +259,4 @@ def _swap_item(lesson_id: int, item_id: int, direction: int, db: Session):
         items[pos].order_index, items[target].order_index = (
             items[target].order_index, items[pos].order_index
         )
-        db.commit()
+    db.commit()

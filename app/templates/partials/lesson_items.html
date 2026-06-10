@@ -22,6 +22,13 @@
     {% elif item.item_type == "text" %}
     <div class="lesson-item-title" style="color:var(--accent);">📝 Textanweisung</div>
     <div class="lesson-item-meta">{{ item.text_instruction | truncate(100) }}</div>
+    {% elif item.item_type == "audio" and item.audio %}
+    <div class="lesson-item-title" style="color:var(--accent);">♫ {{ item.audio.title }}</div>
+    <div class="lesson-item-meta">
+      {% if item.audio.orchestra %}{{ item.audio.orchestra }}{% endif %}
+      {% if item.audio.dance_type %} · {{ item.audio.dance_type }}{% endif %}
+      {% if item.audio.duration %} · {{ (item.audio.duration / 60) | int }}:{{ "%02d" | format(item.audio.duration | int % 60) }}{% endif %}
+    </div>
     {% endif %}
   </div>
 
@@ -47,6 +54,14 @@
       <label class="setting-label" style="gap:0.3rem;">
         <input type="checkbox" name="show_notes" {% if item.show_notes %}checked{% endif %}>
         Notiz
+      </label>
+      {% elif item.item_type == "audio" %}
+      <input type="hidden" name="loop_count" value="1">
+      <input type="hidden" name="speed" value="100">
+      <label class="setting-label">
+        ⏸
+        <input type="number" name="pause_after_seconds" value="{{ item.pause_after_seconds }}"
+               min="0" max="120" style="width:48px;" title="Pause danach (s)">s
       </label>
       {% else %}
       <input type="hidden" name="loop_count" value="1">

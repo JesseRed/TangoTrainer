@@ -1,0 +1,49 @@
+{% extends "base.html" %}
+{% block title %}Playlists — TangoTrainer{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <h1 class="page-title">Musik-Playlists</h1>
+  <a href="/playlists/new" class="btn btn-primary">＋ Neue Playlist</a>
+</div>
+
+{% if playlists %}
+<div style="display:flex; flex-direction:column; gap:1rem;">
+  {% for pl in playlists %}
+  <div class="clip-card" style="align-items:center;">
+    <div class="clip-body">
+      <div class="clip-title">
+        {{ pl.title }}
+        <span style="font-size:0.75rem; padding:0.15rem 0.45rem; border-radius:0.25rem; margin-left:0.4rem;
+                     background:{% if pl.playlist_type == 'tanda' %}var(--accent){% else %}var(--bg-input){% endif %};
+                     color:{% if pl.playlist_type == 'tanda' %}#fff{% else %}var(--text-muted){% endif %};">
+          {% if pl.playlist_type == "tanda" %}Tanda{% else %}Fest{% endif %}
+        </span>
+      </div>
+      <div class="clip-meta">
+        {% if pl.playlist_type == "fixed" %}
+          {{ pl.playlist_tracks | length }} Stück{{ "e" if pl.playlist_tracks | length != 1 else "" }}
+        {% else %}
+          {{ pl.pattern | length }} Slot{{ "s" if pl.pattern | length != 1 else "" }} · {{ pl.repeat_count }}× wiederholen
+        {% endif %}
+        {% if pl.notes %} · {{ pl.notes | truncate(60) }}{% endif %}
+      </div>
+    </div>
+    <div style="display:flex; gap:0.4rem; flex-shrink:0;">
+      <a href="/player/playlist/{{ pl.id }}" class="btn btn-primary btn-sm">▶ Abspielen</a>
+      <a href="/playlists/{{ pl.id }}/edit" class="btn btn-secondary btn-sm">Bearbeiten</a>
+      <form method="post" action="/playlists/{{ pl.id }}/delete"
+            onsubmit="return confirm('Playlist „{{ pl.title }}" wirklich löschen?')">
+        <button type="submit" class="btn btn-danger btn-sm">Löschen</button>
+      </form>
+    </div>
+  </div>
+  {% endfor %}
+</div>
+{% else %}
+<div style="text-align:center; padding:4rem; color:var(--text-muted);">
+  <p style="font-size:1.1rem; margin-bottom:1rem;">Noch keine Playlists angelegt.</p>
+  <a href="/playlists/new" class="btn btn-primary">Erste Playlist erstellen</a>
+</div>
+{% endif %}
+{% endblock %}

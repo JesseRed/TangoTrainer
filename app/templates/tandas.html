@@ -1,0 +1,46 @@
+{% extends "base.html" %}
+{% block title %}Tandas — TangoTrainer{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <h1 class="page-title">Tandas</h1>
+  <a href="/tandas/new" class="btn btn-primary">＋ Neue Tanda</a>
+</div>
+
+{% if tandas %}
+{% set ns = namespace(current_type="") %}
+<div style="display:flex; flex-direction:column; gap:1rem;">
+  {% for tanda in tandas %}
+    {% if tanda.dance_type != ns.current_type %}
+      {% set ns.current_type = tanda.dance_type %}
+      <div style="font-size:0.8rem; font-weight:700; text-transform:uppercase; letter-spacing:.08em;
+                  color:var(--text-muted); margin:0.5rem 0 0.25rem; padding-top:0.5rem;
+                  border-top:1px solid var(--border);">
+        {{ tanda.dance_type | title }}
+      </div>
+    {% endif %}
+  <div class="clip-card" style="align-items:center;">
+    <div class="clip-body">
+      <div class="clip-title">{{ tanda.title }}</div>
+      <div class="clip-meta">
+        {{ tanda.tracks | length }} Stück{{ "e" if tanda.tracks | length != 1 else "" }}
+        {% if tanda.notes %} · {{ tanda.notes | truncate(60) }}{% endif %}
+      </div>
+    </div>
+    <div style="display:flex; gap:0.4rem; flex-shrink:0;">
+      <a href="/tandas/{{ tanda.id }}/edit" class="btn btn-secondary btn-sm">Bearbeiten</a>
+      <form method="post" action="/tandas/{{ tanda.id }}/delete"
+            onsubmit="return confirm('Tanda „{{ tanda.title }}" wirklich löschen?')">
+        <button type="submit" class="btn btn-danger btn-sm">Löschen</button>
+      </form>
+    </div>
+  </div>
+  {% endfor %}
+</div>
+{% else %}
+<div style="text-align:center; padding:4rem; color:var(--text-muted);">
+  <p style="font-size:1.1rem; margin-bottom:1rem;">Noch keine Tandas angelegt.</p>
+  <a href="/tandas/new" class="btn btn-primary">Erste Tanda erstellen</a>
+</div>
+{% endif %}
+{% endblock %}

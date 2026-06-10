@@ -74,6 +74,32 @@
          text-align:center; font-size:1rem; color:var(--accent);">
       Pause… <span id="pause-countdown"></span>
     </div>
+
+    <!-- Rating-Overlay -->
+    <div id="rating-overlay" style="display:none; margin-top:0.75rem; padding:1rem;
+         background:#111; border:1px solid var(--border); border-radius:var(--radius); text-align:center;">
+      <div style="font-size:0.85rem; color:var(--text-muted); margin-bottom:0.75rem;">Wie lief es?</div>
+      <div style="display:flex; gap:0.5rem; flex-wrap:wrap; justify-content:center;">
+        <button class="btn" onclick="submitRating('klappt gut')"
+                style="background:rgba(52,211,153,.15);border-color:#34d399;color:#34d399;">✓ Klappt gut</button>
+        <button class="btn" onclick="submitRating('noch unsicher')"
+                style="background:rgba(251,191,36,.15);border-color:#fbbf24;color:#fbbf24;">↻ Noch unsicher</button>
+        <button class="btn" onclick="submitRating('nicht verstanden')"
+                style="background:rgba(248,113,113,.15);border-color:#f87171;color:#f87171;">✗ Nicht verstanden</button>
+        <button class="btn btn-secondary" onclick="submitRating(null)">→ Überspringen</button>
+      </div>
+    </div>
+
+    <!-- Audio player (für Musikstücke) -->
+    <audio id="player-audio" preload="auto"
+           style="display:none; width:100%; margin-top:0.75rem; accent-color:var(--accent);"
+           controls></audio>
+
+    {% if lesson %}
+    <div style="margin-top:0.5rem; font-size:0.8rem; color:var(--text-muted); text-align:right;">
+      Fernbedienung: <a href="/remote/{{ lesson.id }}" target="_blank" style="color:var(--accent);">/remote/{{ lesson.id }}</a>
+    </div>
+    {% endif %}
   </div>
 
   <!-- Sidebar -->
@@ -86,12 +112,14 @@
     <div class="playlist-item {% if loop.index0 == 0 %}active{% endif %}"
          id="playlist-item-{{ loop.index0 }}"
          onclick="goToItem({{ loop.index0 }})">
-      {% if item.item_type == "text" %}📝 {% endif %}{{ item.title }}
+      {% if item.item_type == "text" %}📝 {% elif item.item_type == "audio" %}♫ {% endif %}{{ item.title }}
       <div class="item-meta">
         {% if item.item_type == "clip" %}
           {{ item.start | round(1) }}s – {{ item.end | round(1) }}s
           {% if item.loop_count > 1 %} · {{ item.loop_count }}×{% endif %}
           {% if item.difficulty %} · {{ item.difficulty }}{% endif %}
+        {% elif item.item_type == "audio" %}
+          Musik
         {% else %}
           Textanweisung
         {% endif %}
@@ -104,6 +132,8 @@
 <!-- Items data for JS -->
 <script>
 const ITEMS = {{ items | tojson }};
+const LESSON_ID = {{ lesson.id if lesson else "null" }};
+const SESSION_ID = "{{ lesson.id if lesson else 'free' }}";
 </script>
 <script src="/static/js/player.js"></script>
 

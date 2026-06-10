@@ -1,11 +1,51 @@
 // Lesson / Playlist Player
 (function () {
   const video = document.getElementById("player-video");
-  if (!video || typeof ITEMS === "undefined" || ITEMS.length === 0) return;
+  if (typeof ITEMS === "undefined" || ITEMS.length === 0) return;
 
   let current = 0;
   let currentLoop = 0;
   let pauseTimer = null;
+  let ratingCallback = null;
+
+  // ── WebSocket Remote Control ─────────────────────────────────────────────
+
+  let wsConn = null;
+  let wsDelay = 1000;
+
+  function connectWS() {
+    if (typeof SESSION_ID === "undefined") return;
+    const proto = location.protocol === "https:" ? "wss:" : "ws:";
+    wsConn = new WebSocket(`${proto}//${location.host}/ws/${SESSION_ID}`);
+    wsConn.onopen = () => { wsDelay = 1000; };
+    wsConn.onclose = () => {
+      setTimeout(connectWS, wsDelay);
+      wsDelay = Math.min(wsDelay * 2, 10000);
+    };
+    wsConn.onmessage = (ev) => {
+      try {
+        const msg = JSON.parse(ev.data);
+        if (msg.type === "state") return;
+        switch (msg.cmd) {
+          case "next":       window.nextItem(); break;
+          case "prev":       window.prevItem(); break;
+          case "replay":     window.replayItem(); break;
+          case "play_pause": window.togglePlay(); break;
+          case "fullscreen": window.toggleFullscreen(); break;
+          case "speed":      window.setSpeed(msg.value); break;
+          case "rate":       if (msg.rating) handleRemoteRating(msg.rating); break;
+        }
+      } catch {}
+    };
+  }
+
+  function wsBroadcast(msg) {
+    if (wsConn && wsConn.readyState === 1) {
+      wsConn.send(JSON.stringify(msg));
+    }
+  }
+
+  connectWS();
 
   // ── Load an item ────────────────────────────────────────────────────────
 
@@ -16,17 +56,23 @@
     const item = ITEMS[index];
 
     hidePauseOverlay();
+    hideRatingOverlay();
 
     if (item.itemType === "text") {
       showTextItem(item);
+    } else if (item.itemType === "audio") {
+      showAudioItem(item);
     } else {
       showVideoItem(item);
     }
     updateUI(index);
+    wsBroadcast({ type: "state", title: item.title, meta: `Block ${index + 1} von ${ITEMS.length}` });
   }
 
   function showVideoItem(item) {
-    document.getElementById("player-video").style.display = "";
+    if (video) video.style.display = "";
+    const audioEl = document.getElementById("player-audio");
+    if (audioEl) { audioEl.pause(); audioEl.style.display = "none"; }
     document.getElementById("player-text-item").style.display = "none";
 
     const src = `/videos/${item.videoId}/stream`;
@@ -45,18 +91,18 @@
     } else {
       video.addEventListener("canplay", seekAndPlay, { once: true });
     }
-    // Sync speed selector
     const sel = document.getElementById("speed-select");
     if (sel) {
       const pct = Math.round((item.speed || 1.0) * 100);
-      // find closest option
       [...sel.options].forEach(o => { o.selected = parseInt(o.value * 100) === pct; });
     }
   }
 
   function showTextItem(item) {
-    video.pause();
-    document.getElementById("player-video").style.display = "none";
+    if (video) video.pause();
+    if (video) video.style.display = "none";
+    const audioEl = document.getElementById("player-audio");
+    if (audioEl) { audioEl.pause(); audioEl.style.display = "none"; }
     const textEl = document.getElementById("player-text-item");
     textEl.style.display = "";
     document.getElementById("player-text-content").textContent = item.title;
@@ -64,38 +110,92 @@
     document.getElementById("player-text-body").textContent = parts.slice(1).join("\n\n") || parts[0] || "";
   }
 
+  function showAudioItem(item) {
+    if (video) { video.pause(); video.style.display = "none"; }
+    document.getElementById("player-text-item").style.display = "none";
+    const audioEl = document.getElementById("player-audio");
+    if (!audioEl) { advanceOrStop(); return; }
+    audioEl.style.display = "";
+    audioEl.src = `/music/${item.audioId}/stream`;
+    audioEl.playbackRate = item.speed || 1.0;
+    audioEl.play().catch(() => {});
+    audioEl.onended = () => advanceOrStop();
+  }
+
   // ── timeupdate: handle clip end + loop/pause logic ──────────────────────
 
-  video.addEventListener("timeupdate", () => {
-    const item = ITEMS[current];
-    if (!item || item.itemType === "text") return;
-    if (video.currentTime < item.end - 0.15) return;
+  if (video) {
+    video.addEventListener("timeupdate", () => {
+      const item = ITEMS[current];
+      if (!item || item.itemType !== "clip") return;
+      if (video.currentTime < item.end - 0.15) return;
 
-    video.pause();
-    currentLoop++;
+      video.pause();
+      currentLoop++;
 
-    if (currentLoop < (item.loopCount || 1)) {
-      updateLoopCounter(item);
-      video.currentTime = item.start;
-      video.play().catch(() => {});
-    } else {
-      // All loops done — handle pause then advance
-      const pause = item.pauseAfter || 0;
-      if (pause > 0) {
-        showPauseOverlay(pause, () => advanceOrStop());
+      if (currentLoop < (item.loopCount || 1)) {
+        updateLoopCounter(item);
+        video.currentTime = item.start;
+        video.play().catch(() => {});
       } else {
-        advanceOrStop();
+        const pause = item.pauseAfter || 0;
+        if (pause > 0) {
+          showPauseOverlay(pause, () => advanceOrStop());
+        } else {
+          advanceOrStop();
+        }
       }
-    }
-  });
+    });
+  }
 
   function advanceOrStop() {
     hidePauseOverlay();
-    if (current + 1 < ITEMS.length) {
-      loadItem(current + 1);
+    const item = ITEMS[current];
+    const doNext = () => {
+      if (current + 1 < ITEMS.length) {
+        loadItem(current + 1);
+      } else {
+        const btn = document.getElementById("btn-play-pause");
+        if (btn) btn.textContent = "▶ Neu starten";
+      }
+    };
+    if (item && item.itemType === "clip" && item.id) {
+      showRatingOverlay(doNext);
     } else {
-      // Playlist done
-      document.getElementById("btn-play-pause").textContent = "▶ Neu starten";
+      doNext();
+    }
+  }
+
+  // ── Rating overlay ──────────────────────────────────────────────────────
+
+  function showRatingOverlay(callback) {
+    ratingCallback = callback;
+    const overlay = document.getElementById("rating-overlay");
+    if (overlay) overlay.style.display = "";
+  }
+
+  function hideRatingOverlay() {
+    const overlay = document.getElementById("rating-overlay");
+    if (overlay) overlay.style.display = "none";
+    ratingCallback = null;
+  }
+
+  window.submitRating = async function (rating) {
+    const item = ITEMS[current];
+    hideRatingOverlay();
+    if (rating && item && item.id) {
+      const fd = new FormData();
+      fd.append("clip_id", item.id);
+      if (typeof LESSON_ID !== "undefined" && LESSON_ID) fd.append("lesson_id", LESSON_ID);
+      fd.append("rating", rating);
+      fetch("/practice-log", { method: "POST", body: fd }).catch(() => {});
+    }
+    if (ratingCallback) { const cb = ratingCallback; ratingCallback = null; cb(); }
+  };
+
+  function handleRemoteRating(rating) {
+    if (ratingCallback) {
+      window.submitRating(rating);
     }
   }
 
@@ -143,7 +243,6 @@
       ).join("");
     }
 
-    // Notes
     const notesDetails = document.getElementById("player-notes-details");
     const notesEl = document.getElementById("player-notes");
     if (notesDetails && notesEl) {
@@ -158,7 +257,6 @@
       }
     }
 
-    // Playlist
     document.querySelectorAll(".playlist-item").forEach((el, i) => {
       el.classList.toggle("active", i === index);
     });
@@ -169,7 +267,7 @@
     const el = document.getElementById("player-loop-counter");
     if (!el) return;
     const total = item.loopCount || 1;
-    if (total > 1 && item.itemType !== "text") {
+    if (total > 1 && item.itemType !== "text" && item.itemType !== "audio") {
       el.textContent = `Wiederholung ${currentLoop + 1} von ${total}`;
     } else {
       el.textContent = "";
@@ -187,25 +285,38 @@
   window.replayItem = () => {
     currentLoop = 0;
     hidePauseOverlay();
+    hideRatingOverlay();
     const item = ITEMS[current];
-    if (item.itemType !== "text") {
+    if (item.itemType === "clip") {
       video.currentTime = item.start;
       video.play().catch(() => {});
       updateLoopCounter(item);
+    } else if (item.itemType === "audio") {
+      const audioEl = document.getElementById("player-audio");
+      if (audioEl) { audioEl.currentTime = 0; audioEl.play().catch(() => {}); }
     }
   };
   window.goToItem = (index) => loadItem(index);
   window.togglePlay = () => {
     const btn = document.getElementById("btn-play-pause");
-    if (ITEMS[current]?.itemType === "text") {
-      nextItem(); return;
+    const item = ITEMS[current];
+    if (item?.itemType === "text") { window.nextItem(); return; }
+    if (item?.itemType === "audio") {
+      const audioEl = document.getElementById("player-audio");
+      if (!audioEl) return;
+      if (audioEl.paused) { audioEl.play(); if (btn) btn.textContent = "⏸ Pause"; }
+      else                { audioEl.pause(); if (btn) btn.textContent = "▶ Abspielen"; }
+      return;
     }
-    if (video.paused) { video.play(); btn.textContent = "⏸ Pause"; }
-    else              { video.pause(); btn.textContent = "▶ Abspielen"; }
+    if (!video) return;
+    if (video.paused) { video.play(); if (btn) btn.textContent = "⏸ Pause"; }
+    else              { video.pause(); if (btn) btn.textContent = "▶ Abspielen"; }
   };
   window.setSpeed = (val) => {
     const rate = parseFloat(val);
-    video.playbackRate = rate;
+    if (video) video.playbackRate = rate;
+    const audioEl = document.getElementById("player-audio");
+    if (audioEl) audioEl.playbackRate = rate;
     if (ITEMS[current]) ITEMS[current].speed = rate;
   };
 
@@ -223,7 +334,6 @@
   document.addEventListener("fullscreenchange", () => {
     const root = document.getElementById("player-root");
     if (root) root.classList.toggle("is-fullscreen", !!document.fullscreenElement);
-    // Hide nav in fullscreen
     const nav = document.querySelector("nav");
     if (nav) nav.style.display = document.fullscreenElement ? "none" : "";
   });
@@ -233,11 +343,11 @@
   document.addEventListener("keydown", (ev) => {
     if (["INPUT", "TEXTAREA", "SELECT"].includes(document.activeElement?.tagName)) return;
     switch (ev.key) {
-      case "ArrowRight": ev.preventDefault(); nextItem(); break;
-      case "ArrowLeft":  ev.preventDefault(); prevItem(); break;
-      case " ":          ev.preventDefault(); togglePlay(); break;
-      case "r": case "R": ev.preventDefault(); replayItem(); break;
-      case "f": case "F": ev.preventDefault(); toggleFullscreen(); break;
+      case "ArrowRight": ev.preventDefault(); window.nextItem(); break;
+      case "ArrowLeft":  ev.preventDefault(); window.prevItem(); break;
+      case " ":          ev.preventDefault(); window.togglePlay(); break;
+      case "r": case "R": ev.preventDefault(); window.replayItem(); break;
+      case "f": case "F": ev.preventDefault(); window.toggleFullscreen(); break;
     }
   });
 

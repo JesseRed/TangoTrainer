@@ -1,0 +1,34 @@
+{% extends "base.html" %}
+{% block title %}Neue Tanda — TangoTrainer{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <h1 class="page-title">Neue Tanda</h1>
+  <a href="/tandas" class="btn btn-secondary btn-sm">← Tandas</a>
+</div>
+
+<div style="max-width:480px;">
+  <div class="clip-panel">
+    <form method="post" action="/tandas">
+      <div class="form-group">
+        <label>Titel</label>
+        <input type="text" name="title" required placeholder="z. B. Pugliese Mittel">
+      </div>
+      <div class="form-group">
+        <label>Tanztyp</label>
+        <select name="dance_type" required style="background:var(--bg-input); border:1px solid var(--border);
+                color:var(--text); padding:0.5rem 0.75rem; border-radius:var(--radius); width:100%;">
+          <option value="tango">Tango</option>
+          <option value="milonga">Milonga</option>
+          <option value="vals">Vals</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Notizen (optional)</label>
+        <textarea name="notes" rows="2" placeholder="z. B. Tempo, Stimmung…"></textarea>
+      </div>
+      <button type="submit" class="btn btn-primary">Tanda anlegen</button>
+    </form>
+  </div>
+</div>
+{% endblock %}

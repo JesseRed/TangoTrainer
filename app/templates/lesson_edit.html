@@ -22,8 +22,39 @@
       {% include "partials/lesson_items.html" %}
     </div>
 
+    <!-- Musik-Item hinzufügen -->
+    {% if music_tracks %}
+    <details style="margin-top:1rem;">
+      <summary class="btn btn-secondary" style="cursor:pointer; display:inline-flex;">
+        ♫ Musikstück hinzufügen
+      </summary>
+      <div style="margin-top:0.75rem; padding:1rem; background:var(--bg-card);
+                  border:1px solid var(--border); border-radius:var(--radius);">
+        <form method="post" action="/lessons/{{ lesson.id }}/items/music"
+              style="display:flex; gap:0.75rem; align-items:center; flex-wrap:wrap;">
+          <select name="track_id" style="flex:1; min-width:200px; background:var(--bg-input);
+                  border:1px solid var(--border); color:var(--text); padding:0.5rem 0.75rem;
+                  border-radius:var(--radius); font-size:0.9rem;">
+            {% set ns = namespace(dance="") %}
+            {% for track in music_tracks %}
+              {% if track.dance_type != ns.dance %}
+                {% set ns.dance = track.dance_type %}
+                <optgroup label="{{ track.dance_type or 'Ohne Kategorie' | title }}">
+              {% endif %}
+              <option value="{{ track.id }}">
+                {{ track.title }}{% if track.orchestra %} — {{ track.orchestra }}{% endif %}
+                {% if track.duration %} ({{ (track.duration / 60) | int }}:{{ "%02d" | format(track.duration | int % 60) }}){% endif %}
+              </option>
+            {% endfor %}
+          </select>
+          <button type="submit" class="btn btn-primary btn-sm">Hinzufügen</button>
+        </form>
+      </div>
+    </details>
+    {% endif %}
+
     <!-- Text-Item hinzufügen -->
-    <details style="margin-top:1.5rem;">
+    <details style="margin-top:1rem;">
       <summary class="btn btn-secondary" style="cursor:pointer; display:inline-flex;">
         ＋ Textanweisung hinzufügen
       </summary>

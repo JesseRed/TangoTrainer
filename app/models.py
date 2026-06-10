@@ -97,6 +97,7 @@ class LessonItem(Base):
     item_type = Column(String, nullable=False)
     clip_id = Column(Integer, ForeignKey("clips.id"), nullable=True)
     video_id = Column(Integer, ForeignKey("videos.id"), nullable=True)
+    audio_id = Column(Integer, ForeignKey("music_tracks.id"), nullable=True)
     text_instruction = Column(Text)
     order_index = Column(Integer, nullable=False)
     loop_count = Column(Integer, default=1)
@@ -108,6 +109,7 @@ class LessonItem(Base):
     lesson = relationship("Lesson", back_populates="items")
     clip = relationship("Clip")
     video = relationship("Video")
+    audio = relationship("MusicTrack")
 
 
 class PracticeLog(Base):
@@ -148,3 +150,78 @@ class WatchDir(Base):
     path = Column(String, unique=True, nullable=False)
     label = Column(String)
     active = Column(Integer, default=1)  # 1 = aktiv, 0 = deaktiviert
+
+
+class Tanda(Base):
+    __tablename__ = "tandas"
+
+    id = Column(Integer, primary_key=True, index=True)
+    title = Column(String, nullable=False)
+    dance_type = Column(String, nullable=False)  # tango, milonga, vals
+    notes = Column(Text)
+
+    tracks = relationship(
+        "TandaTrack",
+        back_populates="tanda",
+        order_by="TandaTrack.order_index",
+        cascade="all, delete-orphan",
+    )
+
+
+class TandaTrack(Base):
+    __tablename__ = "tanda_tracks"
+
+    id = Column(Integer, primary_key=True, index=True)
+    tanda_id = Column(Integer, ForeignKey("tandas.id"), nullable=False)
+    track_id = Column(Integer, ForeignKey("music_tracks.id"), nullable=False)
+    order_index = Column(Integer, nullable=False)
+
+    tanda = relationship("Tanda", back_populates="tracks")
+    track = relationship("MusicTrack")
+
+
+class MusicPlaylist(Base):
+    __tablename__ = "music_playlists"
+
+    id = Column(Integer, primary_key=True, index=True)
+    title = Column(String, nullable=False)
+    playlist_type = Column(String, nullable=False)  # "fixed" | "tanda"
+    notes = Column(Text)
+    repeat_count = Column(Integer, default=3)
+
+    playlist_tracks = relationship(
+        "PlaylistTrack",
+        back_populates="playlist",
+        order_by="PlaylistTrack.order_index",
+        cascade="all, delete-orphan",
+    )
+    pattern = relationship(
+        "PlaylistPattern",
+        back_populates="playlist",
+        order_by="PlaylistPattern.order_index",
+        cascade="all, delete-orphan",
+    )
+
+
+class PlaylistTrack(Base):
+    __tablename__ = "playlist_tracks"
+
+    id = Column(Integer, primary_key=True, index=True)
+    playlist_id = Column(Integer, ForeignKey("music_playlists.id"), nullable=False)
+    track_id = Column(Integer, ForeignKey("music_tracks.id"), nullable=False)
+    order_index = Column(Integer, nullable=False)
+
+    playlist = relationship("MusicPlaylist", back_populates="playlist_tracks")
+    track = relationship("MusicTrack")
+
+
+class PlaylistPattern(Base):
+    __tablename__ = "playlist_patterns"
+
+    id = Column(Integer, primary_key=True, index=True)
+    playlist_id = Column(Integer, ForeignKey("music_playlists.id"), nullable=False)
+    dance_type = Column(String, nullable=False)  # tango, milonga, vals
+    count = Column(Integer, nullable=False, default=1)
+    order_index = Column(Integer, nullable=False)
+
+    playlist = relationship("MusicPlaylist", back_populates="pattern")
