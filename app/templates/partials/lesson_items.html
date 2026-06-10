@@ -10,7 +10,15 @@
     <span class="lesson-item-index">{{ loop.index }}</span>
   </div>
 
-  <div class="lesson-item-body">
+  <div class="lesson-item-body"
+       {% if item.item_type == "clip" and item.clip %}
+       data-video-id="{{ item.clip.video_id }}"
+       data-start="{{ item.clip.start_seconds }}"
+       data-end="{{ item.clip.end_seconds }}"
+       data-title="{{ item.clip.title | e }}"
+       data-clip-id="{{ item.clip.id }}"
+       style="cursor:pointer;"
+       {% endif %}>
     {% if item.item_type == "clip" and item.clip %}
     <div class="lesson-item-title">{{ item.clip.title }}</div>
     <div class="lesson-item-meta">
@@ -73,6 +81,11 @@
   </div>
 
   <div class="lesson-item-actions">
+    {% if item.item_type == "clip" %}
+    <form method="post" action="/lessons/{{ lesson.id }}/items/{{ item.id }}/duplicate" style="display:inline;">
+      <button type="submit" class="btn btn-secondary btn-sm" title="Duplizieren (50% Geschwindigkeit)">⧉</button>
+    </form>
+    {% endif %}
     <form method="post" action="/lessons/{{ lesson.id }}/items/{{ item.id }}/delete"
           onsubmit="return confirm('Block entfernen?')">
       <button type="submit" class="btn btn-danger btn-sm">✕</button>

@@ -186,6 +186,32 @@ def item_add_music(
     return RedirectResponse(url=f"/lessons/{lesson_id}/edit", status_code=303)
 
 
+@router.post("/lessons/{lesson_id}/items/{item_id}/duplicate", response_class=HTMLResponse)
+def item_duplicate(lesson_id: int, item_id: int, db: Session = Depends(get_db)):
+    item = db.query(LessonItem).filter(
+        LessonItem.id == item_id, LessonItem.lesson_id == lesson_id
+    ).first()
+    if not item or item.item_type != "clip":
+        raise HTTPException(status_code=404)
+    # Shift all items after this one up by 1
+    db.query(LessonItem).filter(
+        LessonItem.lesson_id == lesson_id,
+        LessonItem.order_index > item.order_index,
+    ).update({"order_index": LessonItem.order_index + 1})
+    db.add(LessonItem(
+        lesson_id=lesson_id,
+        item_type="clip",
+        clip_id=item.clip_id,
+        order_index=item.order_index + 1,
+        loop_count=item.loop_count,
+        speed=0.5,
+        pause_after_seconds=item.pause_after_seconds,
+        show_notes=item.show_notes,
+    ))
+    db.commit()
+    return RedirectResponse(url=f"/lessons/{lesson_id}/edit", status_code=303)
+
+
 @router.post("/lessons/{lesson_id}/items/{item_id}/update", response_class=HTMLResponse)
 def item_update(
     lesson_id: int,

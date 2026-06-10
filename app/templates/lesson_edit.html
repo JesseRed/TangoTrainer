@@ -109,6 +109,19 @@
       </form>
     </div>
 
+    <!-- Video-Vorschau -->
+    <div id="preview-panel" class="clip-panel" style="margin-top:1rem; display:none;">
+      <h3>Vorschau</h3>
+      <div id="preview-title" style="font-size:0.85rem; color:var(--text-muted); margin-bottom:0.5rem;"></div>
+      <video id="preview-video" preload="none" controls
+             style="width:100%; border-radius:6px; background:#000;">
+      </video>
+      <div style="margin-top:0.5rem; display:flex; gap:0.5rem;">
+        <button class="btn btn-primary btn-sm" onclick="playPreviewClip()">▶ Clip abspielen</button>
+        <a id="preview-link" href="#" class="btn btn-secondary btn-sm">Clip öffnen</a>
+      </div>
+    </div>
+
     <div style="margin-top:1rem;">
       <form method="post" action="/lessons/{{ lesson.id }}/delete"
             onsubmit="return confirm('Stunde wirklich löschen?')">
@@ -118,4 +131,34 @@
   </div>
 
 </div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+  document.getElementById('lesson-items-list').addEventListener('click', function(e) {
+    const body = e.target.closest('.lesson-item-body[data-clip-id]');
+    if (!body) return;
+    const panel = document.getElementById('preview-panel');
+    const video = document.getElementById('preview-video');
+    document.getElementById('preview-title').textContent = body.dataset.title;
+    document.getElementById('preview-link').href = '/clips/' + body.dataset.clipId;
+    video.dataset.start = body.dataset.start;
+    video.dataset.end = body.dataset.end;
+    video.src = '/videos/' + body.dataset.videoId + '/stream';
+    video.load();
+    panel.style.display = '';
+  });
+
+  function playPreviewClip() {
+    const video = document.getElementById('preview-video');
+    const start = parseFloat(video.dataset.start);
+    const end = parseFloat(video.dataset.end);
+    video.currentTime = start;
+    video.play();
+    const stop = () => {
+      if (video.currentTime >= end) { video.pause(); video.removeEventListener('timeupdate', stop); }
+    };
+    video.addEventListener('timeupdate', stop);
+  }
+</script>
 {% endblock %}

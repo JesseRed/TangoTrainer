@@ -15,6 +15,55 @@
   </button>
 </div>
 
+<!-- Filter-Bar -->
+<form method="get" id="filter-form" style="margin-bottom:1.5rem; display:flex; flex-direction:column; gap:0.5rem;">
+
+  <!-- Tanztyp -->
+  <div style="display:flex; gap:0.35rem; flex-wrap:wrap;">
+    <a href="/?{% for s in filter_statuses %}status={{ s }}&{% endfor %}q={{ search_q }}"
+       class="btn btn-sm {% if not filter_dance_types %}btn-primary{% else %}btn-secondary{% endif %}">Alle</a>
+    {% for val, label in [("tango", "Tango"), ("milonga", "Milonga"), ("vals", "Vals"), ("workshop", "Workshop"), ("showdance", "Showdance")] %}
+    <label class="btn btn-sm {% if val in filter_dance_types %}btn-primary{% else %}btn-secondary{% endif %}"
+           style="cursor:pointer; user-select:none;">
+      <input type="checkbox" name="dance_type" value="{{ val }}"
+             {% if val in filter_dance_types %}checked{% endif %}
+             onchange="document.getElementById('filter-form').submit()"
+             style="display:none;">
+      {{ label }}
+    </label>
+    {% endfor %}
+  </div>
+
+  <!-- Status -->
+  <div style="display:flex; gap:0.35rem; flex-wrap:wrap;">
+    <a href="/?{% for dt in filter_dance_types %}dance_type={{ dt }}&{% endfor %}q={{ search_q }}"
+       class="btn btn-sm {% if not filter_statuses %}btn-primary{% else %}btn-secondary{% endif %}">Alle</a>
+    {% for val, label in [("neu", "Neu"), ("in_bearbeitung", "In Bearbeitung"), ("fertig", "Fertig")] %}
+    <label class="btn btn-sm {% if val in filter_statuses %}btn-primary{% else %}btn-secondary{% endif %}"
+           style="cursor:pointer; user-select:none;">
+      <input type="checkbox" name="status" value="{{ val }}"
+             {% if val in filter_statuses %}checked{% endif %}
+             onchange="document.getElementById('filter-form').submit()"
+             style="display:none;">
+      {{ label }}
+    </label>
+    {% endfor %}
+  </div>
+
+  <!-- Suche -->
+  <div style="display:flex; gap:0.5rem; align-items:center;">
+    <input type="text" name="q" value="{{ search_q }}"
+           placeholder="Tänzer, Lied, Komponist suchen …"
+           style="flex:1; max-width:360px; background:var(--bg-input); border:1px solid var(--border);
+                  color:var(--text); padding:0.4rem 0.75rem; border-radius:var(--radius); font-size:0.9rem;">
+    <button type="submit" class="btn btn-secondary btn-sm">Suchen</button>
+    {% if search_q or filter_dance_types or filter_statuses %}
+    <a href="/" class="btn btn-secondary btn-sm">✕ Alle Filter</a>
+    {% endif %}
+  </div>
+
+</form>
+
 <div id="video-grid-container">
   {% include "partials/video_grid.html" %}
 </div>

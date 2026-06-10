@@ -28,6 +28,21 @@ app.include_router(playlists.router)
 
 @app.on_event("startup")
 def startup():
+    from app.database import engine
+    from sqlalchemy import text
+    with engine.connect() as conn:
+        for col, default in [
+            ("dance_type", "NULL"),
+            ("status", "'neu'"),
+            ("song_title", "NULL"),
+            ("composer", "NULL"),
+        ]:
+            try:
+                conn.execute(text(f"ALTER TABLE videos ADD COLUMN {col} TEXT DEFAULT {default}"))
+            except Exception:
+                pass
+        conn.execute(text("UPDATE videos SET status = 'neu' WHERE status IS NULL"))
+        conn.commit()
     init_db()
     db = SessionLocal()
     try:

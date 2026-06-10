@@ -1,7 +1,8 @@
 import os
 from pathlib import Path
-from fastapi import APIRouter, Depends, HTTPException, Request, UploadFile, File
-from fastapi.responses import HTMLResponse, StreamingResponse, JSONResponse
+from typing import List
+from fastapi import APIRouter, Depends, HTTPException, Request, UploadFile, File, Form, Query
+from fastapi.responses import HTMLResponse, StreamingResponse, JSONResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
 from sqlalchemy.orm import Session
 from app.database import get_db
@@ -14,9 +15,35 @@ templates = Jinja2Templates(directory=str(BASE_DIR / "app" / "templates"))
 
 
 @router.get("/", response_class=HTMLResponse)
-def library(request: Request, db: Session = Depends(get_db)):
-    videos = db.query(Video).order_by(Video.created_at.desc()).all()
-    return templates.TemplateResponse("library.html", {"request": request, "videos": videos})
+def library(
+    request: Request,
+    dance_type: List[str] = Query(default=[]),
+    status: List[str] = Query(default=[]),
+    q: str = Query(None),
+    db: Session = Depends(get_db),
+):
+    query = db.query(Video)
+    if dance_type:
+        query = query.filter(Video.dance_type.in_(dance_type))
+    if status:
+        query = query.filter(Video.status.in_(status))
+    if q:
+        like = f"%{q}%"
+        query = query.filter(
+            Video.song_title.ilike(like)
+            | Video.composer.ilike(like)
+            | Video.dancer_1.ilike(like)
+            | Video.dancer_2.ilike(like)
+            | Video.title.ilike(like)
+        )
+    videos = query.order_by(Video.created_at.desc()).all()
+    return templates.TemplateResponse("library.html", {
+        "request": request,
+        "videos": videos,
+        "filter_dance_types": dance_type,
+        "filter_statuses": status,
+        "search_q": q or "",
+    })
 
 
 @router.get("/videos/{video_id}", response_class=HTMLResponse)
@@ -25,6 +52,30 @@ def video_detail(video_id: int, request: Request, db: Session = Depends(get_db))
     if not video:
         raise HTTPException(status_code=404, detail="Video nicht gefunden")
     return templates.TemplateResponse("video_detail.html", {"request": request, "video": video})
+
+
+@router.post("/videos/{video_id}/meta")
+def video_update_meta(
+    video_id: int,
+    dance_type: str = Form(""),
+    status: str = Form("neu"),
+    song_title: str = Form(""),
+    composer: str = Form(""),
+    dancer_1: str = Form(""),
+    dancer_2: str = Form(""),
+    db: Session = Depends(get_db),
+):
+    video = db.query(Video).filter(Video.id == video_id).first()
+    if not video:
+        raise HTTPException(status_code=404, detail="Video nicht gefunden")
+    video.dance_type = dance_type.strip() or None
+    video.status = status
+    video.song_title = song_title.strip() or None
+    video.composer = composer.strip() or None
+    video.dancer_1 = dancer_1.strip() or None
+    video.dancer_2 = dancer_2.strip() or None
+    db.commit()
+    return RedirectResponse(url=f"/videos/{video_id}", status_code=303)
 
 
 @router.post("/scan", response_class=HTMLResponse)

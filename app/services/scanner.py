@@ -63,11 +63,19 @@ def scan_videos(db: Session, scan_dirs: list[Path] | None = None) -> dict:
                 continue
 
             meta = _probe(filepath)
+            known_types = {"tango", "milonga", "vals", "workshop", "showdance"}
+            dance_type = None
+            for part in Path(rel_path).parts[:-1]:
+                if part.lower() in known_types:
+                    dance_type = part.lower()
+                    break
             video = Video(
                 filepath=rel_path,
                 filename=filepath.name,
                 title=filepath.stem.replace("_", " ").replace("-", " ").title(),
                 duration=meta.get("duration"),
+                dance_type=dance_type,
+                status="neu",
             )
             db.add(video)
             db.flush()

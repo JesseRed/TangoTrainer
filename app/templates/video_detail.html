@@ -7,6 +7,68 @@
   <a href="/" class="btn btn-secondary btn-sm">← Bibliothek</a>
 </div>
 
+<!-- Video-Einstellungen -->
+{% set badge_map = {"neu": ("Neu", "#888"), "in_bearbeitung": ("In Arbeit", "#f0a500"), "fertig": ("Fertig", "#4caf7d")} %}
+{% set b = badge_map.get(video.status or "neu", ("Neu", "#888")) %}
+<details style="margin-bottom:1.5rem;">
+  <summary style="cursor:pointer; list-style:none; display:inline-flex; align-items:center; gap:0.5rem;
+                  padding:0.35rem 0.75rem; background:var(--bg-card); border:1px solid var(--border);
+                  border-radius:var(--radius); font-size:0.85rem; color:var(--text);">
+    ⚙ Video-Einstellungen
+    <span style="font-size:0.75rem; padding:0.1rem 0.4rem; border-radius:99px;
+                 border:1px solid {{ b[1] }}; color:{{ b[1] }};">{{ b[0] }}</span>
+    {% if video.dance_type %}
+    <span style="font-size:0.75rem; color:var(--accent);">{{ video.dance_type | title }}</span>
+    {% endif %}
+  </summary>
+  <div style="margin-top:0.5rem; padding:1rem; background:var(--bg-card);
+              border:1px solid var(--border); border-radius:var(--radius);">
+    <form method="post" action="/videos/{{ video.id }}/meta">
+      <div style="display:grid; grid-template-columns:repeat(auto-fill, minmax(200px, 1fr)); gap:0.75rem 1rem;">
+        <div class="form-group" style="margin:0;">
+          <label>Tanztyp</label>
+          <div style="display:flex; gap:0.4rem; flex-wrap:wrap; margin-top:0.3rem;">
+            {% for val, label in [("", "—"), ("tango", "Tango"), ("milonga", "Milonga"), ("vals", "Vals"), ("workshop", "Workshop"), ("showdance", "Showdance")] %}
+            <label style="display:flex; align-items:center; gap:0.3rem; font-weight:normal; cursor:pointer;">
+              <input type="radio" name="dance_type" value="{{ val }}"
+                     {% if (video.dance_type or "") == val %}checked{% endif %}>
+              {{ label }}
+            </label>
+            {% endfor %}
+          </div>
+        </div>
+        <div class="form-group" style="margin:0;">
+          <label>Status</label>
+          <select name="status">
+            <option value="neu" {% if (video.status or "neu") == "neu" %}selected{% endif %}>Neu</option>
+            <option value="in_bearbeitung" {% if video.status == "in_bearbeitung" %}selected{% endif %}>In Bearbeitung</option>
+            <option value="fertig" {% if video.status == "fertig" %}selected{% endif %}>Fertig</option>
+          </select>
+        </div>
+        <div class="form-group" style="margin:0;">
+          <label>Mann (Führender)</label>
+          <input type="text" name="dancer_1" value="{{ video.dancer_1 or '' }}" placeholder="z. B. Carlitos">
+        </div>
+        <div class="form-group" style="margin:0;">
+          <label>Frau (Folgende)</label>
+          <input type="text" name="dancer_2" value="{{ video.dancer_2 or '' }}" placeholder="z. B. Noelia">
+        </div>
+        <div class="form-group" style="margin:0;">
+          <label>Lied</label>
+          <input type="text" name="song_title" value="{{ video.song_title or '' }}" placeholder="z. B. La Cumparsita">
+        </div>
+        <div class="form-group" style="margin:0;">
+          <label>Komponist</label>
+          <input type="text" name="composer" value="{{ video.composer or '' }}" placeholder="z. B. Piazzolla">
+        </div>
+      </div>
+      <div style="margin-top:1rem;">
+        <button type="submit" class="btn btn-primary btn-sm">Speichern</button>
+      </div>
+    </form>
+  </div>
+</details>
+
 <div class="editor-layout">
   <!-- Left: Video + Time Bar -->
   <div>

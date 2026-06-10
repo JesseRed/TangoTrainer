@@ -26,6 +26,10 @@ class Video(Base):
     year = Column(Integer)
     source_url = Column(String)
     description = Column(Text)
+    dance_type = Column(String)
+    status = Column(String, default="neu")
+    song_title = Column(String)
+    composer = Column(String)
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 

@@ -158,3 +158,13 @@ def delete_clip(clip_id: int, db: Session = Depends(get_db)):
     db.delete(clip)
     db.commit()
     return RedirectResponse(url="/clips", status_code=303)
+
+
+@router.post("/clips/{clip_id}/rename")
+def rename_clip(clip_id: int, title: str = Form(...), db: Session = Depends(get_db)):
+    clip = db.query(Clip).filter(Clip.id == clip_id).first()
+    if not clip:
+        raise HTTPException(status_code=404, detail="Clip nicht gefunden")
+    clip.title = title.strip()
+    db.commit()
+    return RedirectResponse(url=f"/clips/{clip_id}", status_code=303)
