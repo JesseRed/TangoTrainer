@@ -1,6 +1,6 @@
 {% if scan_result is defined %}
 <div class="notice notice-success">
-  Scan abgeschlossen: {{ scan_result.added }} neue Videos hinzugefügt, {{ scan_result.skipped }} bereits bekannt.
+  Scan abgeschlossen: {{ scan_result.added }} neue Videos hinzugefügt, {{ scan_result.skipped }} bereits bekannt{% if scan_result.removed %}, {{ scan_result.removed }} nicht mehr vorhandene entfernt{% endif %}.
 </div>
 {% endif %}
 

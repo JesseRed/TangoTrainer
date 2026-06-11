@@ -122,6 +122,47 @@
     audioEl.onended = () => advanceOrStop();
   }
 
+  // ── Click on video → restart current clip ───────────────────────────────
+
+  if (video) {
+    video.addEventListener("click", () => {
+      const item = ITEMS[current];
+      if (item && item.itemType === "clip") {
+        window.replayItem();
+      }
+    });
+  }
+
+  // ── Sync play/pause button with native controls ──────────────────────────
+
+  if (video) {
+    video.addEventListener("play", () => {
+      const btn = document.getElementById("btn-play-pause");
+      if (btn) btn.textContent = "⏸ Pause";
+    });
+    video.addEventListener("pause", () => {
+      const btn = document.getElementById("btn-play-pause");
+      if (btn && !video.ended) btn.textContent = "▶ Abspielen";
+    });
+  }
+
+  // ── video ended: fallback if clip.end >= actual video duration ──────────
+
+  if (video) {
+    video.addEventListener("ended", () => {
+      const item = ITEMS[current];
+      if (!item || item.itemType !== "clip") return;
+      currentLoop++;
+      if (currentLoop < (item.loopCount || 1)) {
+        updateLoopCounter(item);
+        video.currentTime = item.start;
+        video.play().catch(() => {});
+      } else {
+        advanceOrStop();
+      }
+    });
+  }
+
   // ── timeupdate: handle clip end + loop/pause logic ──────────────────────
 
   if (video) {
@@ -150,19 +191,12 @@
 
   function advanceOrStop() {
     hidePauseOverlay();
-    const item = ITEMS[current];
-    const doNext = () => {
-      if (current + 1 < ITEMS.length) {
-        loadItem(current + 1);
-      } else {
-        const btn = document.getElementById("btn-play-pause");
-        if (btn) btn.textContent = "▶ Neu starten";
-      }
-    };
-    if (item && item.itemType === "clip" && item.id) {
-      showRatingOverlay(doNext);
+    hideRatingOverlay();
+    if (current + 1 < ITEMS.length) {
+      loadItem(current + 1);
     } else {
-      doNext();
+      const btn = document.getElementById("btn-play-pause");
+      if (btn) btn.textContent = "▶ Neu starten";
     }
   }
 

@@ -43,6 +43,16 @@ def scan_videos(db: Session, scan_dirs: list[Path] | None = None) -> dict:
         extra = [Path(w.path) for w in db.query(WatchDir).filter(WatchDir.active == 1).all()]
         scan_dirs = [VIDEOS_DIR] + extra
 
+    removed = 0
+    for video in db.query(Video).all():
+        raw = Path(video.filepath)
+        filepath = raw if raw.is_absolute() else BASE_DIR / raw
+        if not filepath.exists():
+            db.delete(video)
+            removed += 1
+    if removed:
+        db.commit()
+
     added = 0
     skipped = 0
 
@@ -87,4 +97,4 @@ def scan_videos(db: Session, scan_dirs: list[Path] | None = None) -> dict:
             added += 1
 
     db.commit()
-    return {"added": added, "skipped": skipped}
+    return {"added": added, "skipped": skipped, "removed": removed}

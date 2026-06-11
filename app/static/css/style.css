@@ -134,7 +134,13 @@ textarea { resize: vertical; min-height: 80px; }
   align-items: start;
 }
 .video-wrapper { position: relative; }
-.video-wrapper video { width: 100%; border-radius: var(--radius); background: #000; }
+.video-wrapper video {
+  width: 100%;
+  max-height: calc(100vh - 280px);
+  object-fit: contain;
+  border-radius: var(--radius);
+  background: #000;
+}
 .time-bar {
   display: flex; align-items: center; gap: 1rem;
   margin-top: 0.75rem;
@@ -245,9 +251,22 @@ textarea { resize: vertical; min-height: 80px; }
   display: grid;
   grid-template-columns: 1fr 320px;
   gap: 1.5rem;
-  min-height: calc(100vh - 52px);
+  height: calc(100vh - 52px - 3rem); /* 52px nav + 1.5rem container-top + 1.5rem container-bottom */
 }
-.player-main video { width: 100%; border-radius: var(--radius); background: #000; }
+.player-main {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+.player-main video {
+  flex: 1 1 0%;
+  min-height: 150px;
+  width: 100%;
+  object-fit: contain;
+  border-radius: var(--radius);
+  background: #000;
+  cursor: pointer;
+}
 .player-info {
   margin-top: 0.75rem;
   padding: 1rem;
@@ -265,8 +284,8 @@ textarea { resize: vertical; min-height: 80px; }
   background: var(--bg-card);
   border: 1px solid var(--border);
   border-radius: var(--radius);
-  overflow: hidden;
-  align-self: start;
+  overflow-y: auto;
+  min-height: 0;
 }
 .sidebar-header {
   padding: 0.75rem 1rem;
@@ -326,6 +345,13 @@ textarea { resize: vertical; min-height: 80px; }
 }
 #player-root.is-fullscreen .player-main { flex: 1; }
 #player-root:fullscreen { background: #000; }
+#player-root.is-fullscreen .player-main video { max-height: none; flex: 1; min-height: 0; }
+
+/* ── Clip Preview ── */
+#clip-preview {
+  max-height: calc(100vh - 220px);
+  object-fit: contain;
+}
 
 /* ── Scan result notice ── */
 .notice {
@@ -339,4 +365,5 @@ textarea { resize: vertical; min-height: 80px; }
 /* ── Responsive ── */
 @media (max-width: 900px) {
   .editor-layout, .player-layout { grid-template-columns: 1fr; }
+  .player-layout { height: auto; }
 }
